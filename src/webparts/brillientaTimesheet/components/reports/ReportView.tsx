@@ -38,18 +38,8 @@ export function ReportView(props: { facts: IFact[]; def: Pick<IReportDefinition,
       chart = <BarList items={items.map((x) => ({ ...x, color: undefined }))} format={(v) => fmt(m0, v)} />;
       break;
     case 'donut':
-      chart = (
-        <div className="ts-donut">
-          <Donut items={items.slice(0, 8)} center={fmt(m0, total[m0])} centerSub={(MEASURES.filter((x) => x.key === m0)[0] || { text: '' }).text} />
-          <div className="ts-legend" style={{ flexDirection: 'column', gap: 4 }}>
-            {items.slice(0, 8).map((x) => (
-              <span key={x.label}>
-                <i className="ts-dot" style={{ background: x.color }} /> {x.label} · {fmt(m0, x.value)}
-              </span>
-            ))}
-          </div>
-        </div>
-      );
+      // The donut draws its own legend with values and shares.
+      chart = <Donut items={items.slice(0, 8)} center={fmt(m0, total[m0])} centerSub={(MEASURES.filter((x) => x.key === m0)[0] || { text: '' }).text} />;
       break;
     case 'column':
     case 'line': {
