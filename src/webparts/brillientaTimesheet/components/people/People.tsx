@@ -265,7 +265,7 @@ function ExternalDialog(props: { onDismiss: () => void; onDone: () => void }): J
       await svc.saveUser({ name: name || email, email, role: 'member', external: true, active: true });
       await svc.log('External user added', email);
       props.onDone();
-    }, invite ? 'Invitation sent and person added.' : 'Person added.');
+    }, invite && graph ? 'Invitation sent and person added.' : 'Person added. Share the site with them (or invite them as a guest in Microsoft 365) so they can sign in.');
   return (
     <Dialog hidden={false} onDismiss={props.onDismiss} dialogContentProps={{ type: DialogType.normal, title: 'Add an external user', subText: 'A Microsoft 365 guest who tracks time (contractor, client staff).' }} minWidth={480}>
       <TextField label="Email" required value={email} onChange={(_, v) => setEmail((v || '').trim())} />

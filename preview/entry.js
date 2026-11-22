@@ -27,7 +27,7 @@ const PEOPLE = [
   { name: 'Tom Becker', email: 'tom.becker@contoso.com', role: 'member', manager: 'meera.iyer@contoso.com', dept: 'Engineering', title: 'QA Engineer', cost: 1100, bill: 2200 },
   { name: 'Ana Lopez (Fabrikam)', email: 'ana.lopez@fabrikam.com', role: 'member', manager: 'arjun.mehta@contoso.com', dept: 'Contractors', title: 'Consultant', cost: 2000, bill: 3000, external: true }
 ];
-const SIGNED_IN = { admin: 0, pm: 2, manager: 3, member: 4 }[role] || 0;
+const SIGNED_IN = { admin: 0, pgm: 1, pm: 2, manager: 3, member: 4 }[role] || 0;
 const me = PEOPLE[SIGNED_IN];
 const user = { Id: 7, Title: me.name, Email: me.email, LoginName: 'i:0#.f|membership|' + me.email, IsSiteAdmin: role === 'admin' };
 const author = { Id: user.Id, Title: user.Title, EMail: user.Email };
@@ -91,6 +91,8 @@ async function main() {
   cfg.autoApproval = { enabled: true, roles: ['admin', 'programManager'], requireWithinRules: true, maxHours: 0 };
   cfg.customColumns = [{ key: 'ticket', label: 'Ticket #', type: 'text', level: 'entry', choices: [], required: false, inReports: true }, { key: 'po', label: 'PO number', type: 'text', level: 'project', choices: [], required: false, inReports: false }];
   // ?tm=1: connected to Brillienta Task Manager (TM_ lists on the same site, seeded below).
+  // ?leave=1: Time off Manager 365 connected (a leave list on the same site, seeded below).
+  if (params.get('leave')) cfg.timeOff = { ...cfg.timeOff, enabled: true, autoFill: true };
   if (params.get('tm')) cfg.taskManager = { ...cfg.taskManager, enabled: true, autoSync: true, pushTime: 'approved', importTime: true };
   cfg.holidays = [{ date: addDays(weekStartOf(today(), 1), 14 + 2), name: 'Company day' }];
   const installedAt = params.get('installed') ? new Date(Date.now() - Number(params.get('installed')) * 86400000).toISOString() : new Date(Date.now() - 3 * 86400000).toISOString();
@@ -177,6 +179,14 @@ async function main() {
   seed('TS_TimeEntries', entries.map((e) => { const { __sheet, ...rest } = e; return { ...rest, SheetId: sheetId(__sheet), Title: __sheet }; }), author);
   seed('TS_Notifications', [{ Title: 'Timesheet to approve: Rahul Sharma, week of last week', Body: 'Rahul Sharma submitted 40 hours (32 billable).', LinkPath: 'approvals', Recipient: me.email, IsRead: false, Kind: 'sheetSubmitted' }], author);
   if (params.get('tm')) seedTaskManager(author);
+  if (params.get('leave')) {
+    // Approved leave for the signed-in person: Wednesday to the following Monday (it spans a weekend), and a rejected request.
+    const w = weekStartOf(today(), 1);
+    seed('TOM_LeaveRequests', [
+      { Title: 'Family trip', EmployeeEmail: me.email, StartDate: addDays(w, 2) + 'T00:00:00Z', EndDate: addDays(w, 7) + 'T00:00:00Z', RequestStatus: 'Approved', LeaveType: 'Annual leave' },
+      { Title: 'Rejected', EmployeeEmail: me.email, StartDate: addDays(w, 0) + 'T00:00:00Z', EndDate: addDays(w, 0) + 'T00:00:00Z', RequestStatus: 'Rejected', LeaveType: 'Sick leave' }
+    ], author);
+  }
   ['TS_Tickets', 'TS_SupportTickets', 'TS_EmailQueue', 'TS_AuditLog', 'TS_SavedReports'].forEach((l) => seed(l, [], author));
   // ?plan=: a licence for that plan, as if activated (signed with the preview key pair).
   if (params.get('plan')) seed('TS_Settings', [{ Title: 'LicenseKey', SettingValue: await previewKey(params.get('plan'), '6f1c2a9e-0b7d-4c55-9e3a-2d8f41b07c13') }], author);

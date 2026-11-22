@@ -68,3 +68,11 @@ test('submit checks: project, activity, notes, required custom columns', () => {
   const off = entry({ projectId: 0, activityId: 9, hours: { '2026-11-16': 8 }, total: 8 });
   assert.ok(!R.validateWeek({ cfg: defaultConfig(), days, entries: [off], forSubmit: true, timeOffActivityId: 9 }).some((i) => /project/.test(i.message)));
 });
+
+test('leave spanning a weekend counts only on working days', () => {
+  const cfg = { ...defaultConfig(), limits: { dailyMin: 0, dailyMax: 0, weeklyMin: 0, weeklyMax: 45, enforcement: 'block' } };
+  const work = entry({ projectId: 1, hours: { '2026-11-16': 8, '2026-11-17': 8 }, total: 16 });
+  const leave = [{ email: 'p@contoso.com', start: '2026-11-18', end: '2026-11-23', type: 'Annual' }];
+  // Wed–Fri leave = 24 h; Sat and Sun must not add another 16 h (which would break the 45 h maximum).
+  assert.equal(R.blocking(R.validateWeek({ cfg, days, entries: [work], timeOff: leave, forSubmit: true })), false);
+});

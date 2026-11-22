@@ -326,7 +326,7 @@ export function WeekSheet(): JSX.Element {
 
 /** Clone weekly timesheets: copy the lines (and optionally the hours) of an earlier week. */
 function CloneDialog(props: { week: string; onDismiss: () => void; onClone: (lines: ITimeEntry[], replace: boolean) => void }): JSX.Element {
-  const { svc, me, workflow, ref, toast, config } = useApp();
+  const { svc, me, workflow, ref, toast, config, myUser } = useApp();
   const [sheets, setSheets] = React.useState<ITimesheet[] | undefined>();
   const [source, setSource] = React.useState(addDays(props.week, -7));
   const [withHours, setWithHours] = React.useState(true);
@@ -359,7 +359,7 @@ function CloneDialog(props: { week: string; onDismiss: () => void; onClone: (lin
         open
       );
       // Hours never land on days that are not tracked this week (holidays, days off).
-      lines.forEach((l) => Object.keys(l.hours).forEach((d) => !isTrackingDay(config, d) && delete l.hours[d]));
+      lines.forEach((l) => Object.keys(l.hours).forEach((d) => !isTrackingDay(config, d, myUser) && delete l.hours[d]));
       props.onClone(lines, mode === 'replace');
     } catch (e) {
       toast((e as Error).message, 'error');

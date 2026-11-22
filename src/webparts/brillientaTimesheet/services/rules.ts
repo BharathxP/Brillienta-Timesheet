@@ -109,10 +109,11 @@ export function validateWeek(input: IValidateInput): IIssue[] {
   const hasLeaveOnSheet = (d: DateKey): boolean => !!input.timeOffActivityId && entries.some((e) => e.activityId === input.timeOffActivityId && (e.hours[d] || 0) > 0);
   let week = 0;
   days.forEach((d) => {
-    const leave = input.timeOff && !hasLeaveOnSheet(d) ? leaveHours(input.timeOff, d, cfg.standardDay) : 0;
+    const tracking = isTrackingDay(cfg, d, user);
+    // Leave counts only on days the person would have worked (a week's leave spans the weekend in the leave list).
+    const leave = tracking && input.timeOff && !hasLeaveOnSheet(d) ? leaveHours(input.timeOff, d, cfg.standardDay) : 0;
     const t = totals[d] + leave;
     week += t;
-    const tracking = isTrackingDay(cfg, d, user);
     if (totals[d] < 0) issues.push({ level: 'error', day: d, message: `${formatDay(d)}: hours cannot be negative.` });
     if (totals[d] > 24) issues.push({ level: 'error', day: d, message: `${formatDay(d)}: more than 24 hours in one day.` });
     if (!tracking && totals[d] > 0 && !limits.allowNonWorkingDays) {

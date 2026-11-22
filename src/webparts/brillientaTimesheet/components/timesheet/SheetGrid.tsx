@@ -101,7 +101,7 @@ export function SheetGrid(props: ISheetGridProps): JSX.Element {
             {days.map((d) => {
               const off = !isTrackingDay(config, d, owner.user);
               const hol = holidayOn(config, d);
-              const leave = leaveHours(props.timeOff, d, config.standardDay);
+              const leave = !off ? leaveHours(props.timeOff, d, config.standardDay) : 0;
               return (
                 <th key={d} className={'ts-day' + (d === t ? ' is-today' : '') + (off ? ' is-off' : '') + (leave ? ' is-leave' : '')} title={hol || (leave ? 'Approved time off' : off ? 'Not a working day' : '')}>
                   {DAY_SHORT[dayOfWeek(d)]}
@@ -259,7 +259,7 @@ export function SheetGrid(props: ISheetGridProps): JSX.Element {
           <tr className="ts-sheet-total">
             <td colSpan={1 + (billableOn ? 1 : 0) + columns.length}>Total</td>
             {days.map((d) => {
-              const leave = leaveHours(props.timeOff, d, config.standardDay);
+              const leave = isTrackingDay(config, d, owner.user) ? leaveHours(props.timeOff, d, config.standardDay) : 0;
               const onSheet = !!timeOffActivity && lines.some((e) => e.activityId === timeOffActivity.id && (e.hours[d] || 0) > 0);
               const v = totals[d] + (onSheet ? 0 : leave);
               const over = limits.dailyMax > 0 && v > limits.dailyMax;

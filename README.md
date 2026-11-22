@@ -11,6 +11,8 @@ except the emails and Teams messages you switch on.
 
 ![Project overview](docs/screenshots/detail-overview.png)
 
+See also: [Enterprise feature checklist](docs/ENTERPRISE-CHECKLIST.md).
+
 ## Contents
 
 1. [Feature map](#1-feature-map) — every item of the plans and where it is in the app

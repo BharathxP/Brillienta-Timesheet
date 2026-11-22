@@ -177,7 +177,8 @@ function GeneralAdmin(): JSX.Element {
 function TrackingAdmin(): JSX.Element {
   const draft = useDraft();
   const { d, set } = draft;
-  const { has } = useApp();
+  const { has, savedConfig } = useApp();
+  const savedWeekStart = savedConfig.weekStart;
   const [hDate, setHDate] = React.useState('');
   const [hName, setHName] = React.useState('');
   return (
@@ -186,6 +187,12 @@ function TrackingAdmin(): JSX.Element {
         <div className="ts-form-grid">
           <Gate feature="weekStart">
             <Dropdown label="Week starts on" selectedKey={d.weekStart} options={DAY_NAMES.map((n, i) => ({ key: i, text: n }))} onChange={(_, o) => o && set({ weekStart: Number(o.key) })} />
+            {d.weekStart !== savedWeekStart && (
+              <MessageBar messageBarType={MessageBarType.warning} isMultiline styles={{ root: { marginTop: 8, borderRadius: 8 } }}>
+                Weeks already filled in keep their old dates: they stay in reports and in My timesheets, but My timesheet opens the new weeks. Change the start day before people begin, or at a
+                quiet moment (every timesheet submitted).
+              </MessageBar>
+            )}
           </Gate>
           <TextField label="Standard working day (hours)" type="number" value={String(d.standardDay)} onChange={(_, v) => set({ standardDay: Number(v) || 8 })} description="Used for leave, targets and utilisation." />
           <Dropdown
