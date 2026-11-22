@@ -1,0 +1,18 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "brillienta-timesheet-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/brillientaTimesheet/BrillientaTimesheetWebPart.js",
+          "manifest": "./src/webparts/brillientaTimesheet/BrillientaTimesheetWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "BrillientaTimesheetWebPartStrings": "lib/webparts/brillientaTimesheet/loc/{locale}.js"
+  }
+}

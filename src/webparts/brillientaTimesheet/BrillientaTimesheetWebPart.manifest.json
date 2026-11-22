@@ -1,0 +1,22 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx/client-side-web-part-manifest.schema.json",
+  "id": "ff5b1593-a3b3-45f5-b3a5-8d11821fc2a1",
+  "alias": "BrillientaTimesheetWebPart",
+  "componentType": "WebPart",
+  "version": "*",
+  "manifestVersion": 2,
+  "requiresCustomScript": false,
+  "supportedHosts": ["SharePointWebPart", "SharePointFullPage", "TeamsTab", "TeamsPersonalApp"],
+  "supportsThemeVariants": true,
+  "supportsFullBleed": true,
+  "preconfiguredEntries": [
+    {
+      "groupId": "5c03119e-3074-46fd-976b-c60198311f70",
+      "group": { "default": "Advanced" },
+      "title": { "default": "Brillienta Timesheet" },
+      "description": { "default": "Weekly timesheets, projects, approvals, billable hours and cost reports." },
+      "officeFabricIconFontName": "Clock",
+      "properties": { "listPrefix": "TS_" }
+    }
+  ]
+}

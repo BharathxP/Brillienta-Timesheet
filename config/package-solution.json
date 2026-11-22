@@ -1,0 +1,52 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "Brillienta-Timesheet",
+    "id": "68060ea7-a75d-47d6-bd5f-685afeabbaf0",
+    "version": "1.0.0.0",
+    "iconPath": "images/app-icon.png",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "Brillienta",
+      "websiteUrl": "https://brillienta.com/timesheet",
+      "privacyUrl": "https://brillienta.com/privacy",
+      "termsOfUseUrl": "https://brillienta.com/terms",
+      "mpnId": "7194411"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "Timesheets, projects, approvals and cost reports for SharePoint and Microsoft Teams."
+      },
+      "longDescription": {
+        "default": "Brillienta Timesheet is a time tracking app that runs inside SharePoint Online and Microsoft Teams. All data stays in SharePoint lists on your own site. It includes weekly timesheets with cloning, billable and non-billable hours, projects, tasks and activities with bulk creation and self-assignment, custom columns, user and project hourly rates, approvals with role-based auto-approval, daily and weekly hour rules, pending timesheet reminders, project and team reports, custom dashboards, Excel export, Time off Manager 365, Planner, Teams and Outlook integration, Power Automate, Power BI and a REST API. Includes a 14-day free trial of every feature; after the trial a licence key from Brillienta is required (Standard, Pro or Enterprise). Microsoft Graph permissions: User.Read.All (people picker and external users), Tasks.ReadWrite (Planner import, optional), Mail.Send and ChatMessage.Send and Chat.Create (Outlook and Teams notifications, optional), User.Invite.All (inviting external users, optional), Group.Read.All (Planner plans and group import)."
+      },
+      "categories": [
+        "Productivity",
+        "Project management",
+        "Finance"
+      ]
+    },
+    "features": [
+      {
+        "title": "Brillienta Timesheet",
+        "description": "Activates the Brillienta Timesheet web part.",
+        "id": "762fdc8b-33e2-4c51-bd9e-3b776cf4ff12",
+        "version": "1.0.0.0"
+      }
+    ],
+    "webApiPermissionRequests": [
+      { "resource": "Microsoft Graph", "scope": "User.Read.All" },
+      { "resource": "Microsoft Graph", "scope": "Tasks.ReadWrite" },
+      { "resource": "Microsoft Graph", "scope": "Group.Read.All" },
+      { "resource": "Microsoft Graph", "scope": "Mail.Send" },
+      { "resource": "Microsoft Graph", "scope": "ChatMessage.Send" },
+      { "resource": "Microsoft Graph", "scope": "Chat.Create" },
+      { "resource": "Microsoft Graph", "scope": "User.Invite.All" }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/Brillienta-Timesheet.sppkg"
+  }
+}

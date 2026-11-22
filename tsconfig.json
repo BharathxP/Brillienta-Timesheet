@@ -1,0 +1,13 @@
+{
+  "extends": "./node_modules/@microsoft/spfx-web-build-rig/profiles/default/tsconfig-base.json",
+  "compilerOptions": {
+    // The rig pins an ES5 + ES2015-core lib set; widen it (webpack down-levels the syntax) and drop the jest
+    // typings the rig expects, since unit tests here run with node:test against lib-commonjs.
+    "lib": ["dom", "dom.iterable", "es2018"],
+    "types": ["webpack-env"],
+    "noUnusedLocals": true,
+    "noUnusedParameters": false,
+    "noImplicitReturns": true,
+    "forceConsistentCasingInFileNames": true
+  }
+}
