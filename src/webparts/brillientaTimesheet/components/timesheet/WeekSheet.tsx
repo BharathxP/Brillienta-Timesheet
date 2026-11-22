@@ -7,7 +7,7 @@ import { IIssue, blocking, isTrackingDay, leaveHours, limitsFor, validateWeek } 
 import { entryTotal } from '../../services/mappers';
 import { hours, formatDateTime } from '../../services/format';
 import { projectsFor } from '../../services/access';
-import { Card, ErrorBox, Loading, PageHeader, StatusBadge, useConfirm } from '../common/Ui';
+import { Card, ErrorBox, Kpi, Loading, PageHeader, StatusBadge, useConfirm } from '../common/Ui';
 import { SheetGrid, blankLine } from './SheetGrid';
 import { Comments } from './Comments';
 
@@ -224,8 +224,13 @@ export function WeekSheet(): JSX.Element {
           Approved by {sheet && sheet.decidedBy} {sheet && sheet.decidedAt ? `on ${formatDateTime(sheet.decidedAt)}` : ''}. Ask an approver to reopen it if something needs to change.
         </MessageBar>
       )}
-      <div className="ts-split">
-        <div style={{ minWidth: 0 }}>
+      <div className="ts-kpis">
+        <Kpi label="Total this week" value={`${hours(total)} h`} icon="Clock" tint={1} hint={`${trackingDays} working day${trackingDays === 1 ? '' : 's'} · ${config.standardDay} h day`} />
+        <Kpi label="Target" value={`${hours(target)} h`} icon="Bullseye" tint={2} tone={total >= target ? 'success' : undefined} hint={total >= target ? 'Complete' : `${hours(target - total)} h to go`} />
+        <Kpi label="Billable" value={`${hours(billable)} h`} icon="Money" tint={5} />
+        <Kpi label="Non-billable" value={`${hours(total - billable)} h`} icon="Blocked2" tint={3} />
+      </div>
+      <div>
           <SheetGrid days={days} lines={lines} owner={{ email: me.email, user: myUser }} readOnly={!editable} timeOff={loaded.timeOff} onChange={change} />
           {editable && (
             <div className="ts-row" style={{ marginTop: 10 }}>
@@ -246,53 +251,24 @@ export function WeekSheet(): JSX.Element {
             </ul>
           )}
         </div>
-        <div className="ts-stack">
-          <Card title="This week" icon="Clock">
-            <div className="ts-kpis" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', marginBottom: 10 }}>
-              <div className="ts-kpi">
-                <div className="ts-kpi-label">Total</div>
-                <div className="ts-kpi-value">{hours(total)} h</div>
+      <div className="ts-grid ts-grid-2" style={{ marginTop: 16 }}>
+        {loaded.timeOff.length > 0 && (
+          <Card title="Time off this week" icon="Vacation">
+            {loaded.timeOff.map((t, i) => (
+              <div key={i} className="ts-small">
+                <strong>{t.type}</strong> · {formatDay(t.start)} – {formatDay(t.end)}
               </div>
-              <div className="ts-kpi">
-                <div className="ts-kpi-label">Target</div>
-                <div className="ts-kpi-value">{hours(target)} h</div>
-              </div>
-              <div className="ts-kpi">
-                <div className="ts-kpi-label">Billable</div>
-                <div className="ts-kpi-value" style={{ color: 'var(--ts-success)' }}>
-                  {hours(billable)} h
-                </div>
-              </div>
-              <div className="ts-kpi">
-                <div className="ts-kpi-label">Non-billable</div>
-                <div className="ts-kpi-value">{hours(total - billable)} h</div>
-              </div>
-            </div>
-            <div className="ts-progress" style={{ height: 10 }}>
-              <span style={{ width: `${Math.min(100, target ? (total / target) * 100 : 0)}%` }} />
-            </div>
+            ))}
             <div className="ts-small ts-muted" style={{ marginTop: 6 }}>
-              {trackingDays} working day{trackingDays === 1 ? '' : 's'} · {config.standardDay} h standard day
+              From Time off Manager 365. {config.timeOff.autoFill ? 'Put on your timesheet automatically.' : 'Counts towards your minimum hours.'}
             </div>
           </Card>
-          {loaded.timeOff.length > 0 && (
-            <Card title="Time off this week" icon="Vacation">
-              {loaded.timeOff.map((t, i) => (
-                <div key={i} className="ts-small">
-                  <strong>{t.type}</strong> · {formatDay(t.start)} – {formatDay(t.end)}
-                </div>
-              ))}
-              <div className="ts-small ts-muted" style={{ marginTop: 6 }}>
-                From Time off Manager 365. {config.timeOff.autoFill ? 'Put on your timesheet automatically.' : 'Counts towards your minimum hours.'}
-              </div>
-            </Card>
-          )}
-          {sheet && sheet.comments.length > 0 && (
-            <Card title="History" icon="History">
-              <Comments comments={sheet.comments} />
-            </Card>
-          )}
-        </div>
+        )}
+        {sheet && sheet.comments.length > 0 && (
+          <Card title="History" icon="History">
+            <Comments comments={sheet.comments} />
+          </Card>
+        )}
       </div>
       {cloneOpen && (
         <CloneDialog

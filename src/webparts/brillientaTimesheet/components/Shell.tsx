@@ -127,7 +127,7 @@ export function Shell(props: { frameClass: string; frameStyle?: React.CSSPropert
 
   const banner =
     license.state === 'trial' && isAdmin ? (
-      <MessageBar messageBarType={MessageBarType.info} actions={<DefaultButton text="Activate a licence" onClick={() => navigate('admin/licence')} />}>
+      <MessageBar messageBarType={MessageBarType.info} isMultiline={false} actions={<DefaultButton text="Activate a licence" onClick={() => navigate('admin/licence')} />}>
         {describeStatus(license)}.
       </MessageBar>
     ) : license.state === 'grace' ? (
@@ -137,7 +137,7 @@ export function Shell(props: { frameClass: string; frameStyle?: React.CSSPropert
         Your organisation has more active people than its plan includes ({license.users}). Ask an administrator to add users to the licence; until then you can fill in your timesheet but not submit it.
       </MessageBar>
     ) : isAdmin && app.usersOver > 0 ? (
-      <MessageBar messageBarType={MessageBarType.warning} actions={<DefaultButton text="People" onClick={() => navigate('people')} />}>
+      <MessageBar messageBarType={MessageBarType.warning} isMultiline={false} actions={<DefaultButton text="People" onClick={() => navigate('people')} />}>
         {app.usersOver} active {app.usersOver === 1 ? 'person is' : 'people are'} beyond the {license.users} users of your plan and cannot submit timesheets. Deactivate people or add users to the licence.
       </MessageBar>
     ) : null;

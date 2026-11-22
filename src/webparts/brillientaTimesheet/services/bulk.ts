@@ -110,7 +110,8 @@ export function parseBulk(kind: BulkKind, text: string): IBulkRow[] {
       const raw = (cells[j] || '').trim();
       switch (col.type) {
         case 'number': {
-          const n = raw ? Number(raw.replace(/[^\d.-]/g, '')) : 0;
+          // Thousands separators and currency symbols are fine ("₹1,500"); anything else is not a number.
+          const n = raw ? Number(raw.replace(/[\s,₹$€£]/g, '')) : 0;
           if (raw && isNaN(n)) errors.push(`${col.label} is not a number`);
           values[key] = isNaN(n) ? 0 : n;
           break;
