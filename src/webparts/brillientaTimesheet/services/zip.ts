@@ -21,8 +21,8 @@ function utf8(s: string): Uint8Array {
   return new TextEncoder().encode(s);
 }
 
-/** A .zip with the given files (path → text). Paths use forward slashes. */
-export function zipFiles(files: Array<{ path: string; content: string }>, when: Date = new Date()): Uint8Array {
+/** A .zip with the given files (path → text or bytes). Paths use forward slashes. */
+export function zipFiles(files: Array<{ path: string; content: string | Uint8Array }>, when: Date = new Date()): Uint8Array {
   const time = ((when.getHours() << 11) | (when.getMinutes() << 5) | Math.floor(when.getSeconds() / 2)) & 0xffff;
   const date = (((when.getFullYear() - 1980) << 9) | ((when.getMonth() + 1) << 5) | when.getDate()) & 0xffff;
   const locals: Uint8Array[] = [];
@@ -30,7 +30,7 @@ export function zipFiles(files: Array<{ path: string; content: string }>, when: 
   let offset = 0;
   files.forEach((f) => {
     const name = utf8(f.path);
-    const data = utf8(f.content);
+    const data = typeof f.content === 'string' ? utf8(f.content) : f.content;
     const crc = crc32(data);
     const local = new Uint8Array(30 + name.length + data.length);
     const l = new DataView(local.buffer);

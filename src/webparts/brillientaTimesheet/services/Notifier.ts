@@ -55,8 +55,8 @@ export class Notifier {
   }
 
   /** Subject and branded HTML for one recipient. */
-  public compose(template: TemplateKey, vars: Record<string, string | number | undefined>, path: string, cta?: string): { subject: string; html: string; text: string; teams: boolean; enabled: boolean } {
-    const cfg = this._config();
+  public compose(template: TemplateKey, vars: Record<string, string | number | undefined>, path: string, cta?: string, config?: ITimesheetConfig): { subject: string; html: string; text: string; teams: boolean; enabled: boolean } {
+    const cfg = config || this._config();
     const t = cfg.templates[template];
     const all = { org: cfg.orgName, app: cfg.appName, link: this.link(path), ...vars };
     const subject = renderTemplate(t.subject, all, false);

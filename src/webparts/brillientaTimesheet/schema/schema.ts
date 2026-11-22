@@ -42,7 +42,7 @@ export type ListKey =
  * - config: admins edit, everyone reads (settings, activities, programmes).
  * - managed: admins and managers edit, everyone reads (projects, tasks, people).
  * - timesheet: everyone adds and edits only their own rows; approvers and admins see and edit all.
- * - shared: everyone adds and edits (notifications, email queue).
+ * - shared: everyone adds and edits (tasks — so people can self-assign and update progress —, notifications, tickets).
  * - adminOnly: admins only (audit log).
  */
 export type SecurityProfile = 'config' | 'managed' | 'timesheet' | 'shared' | 'adminOnly';
@@ -131,7 +131,7 @@ export const LISTS: IListDef[] = [
     suffix: 'Tasks',
     description: 'Tasks within projects, with assignees, planned hours and Planner links.',
     titleDisplayName: 'Task',
-    security: 'managed',
+    security: 'shared',
     fields: [
       { name: 'ProjectId', title: 'Project ID', type: 'Number', indexed: true, required: true },
       { name: 'Details', title: 'Description', type: 'Note' },
