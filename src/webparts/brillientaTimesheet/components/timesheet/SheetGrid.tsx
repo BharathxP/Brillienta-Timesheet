@@ -18,7 +18,7 @@ export interface ISheetGridProps {
 }
 
 export function blankLine(email: string, weekStart: string): ITimeEntry {
-  return { id: 0, sheetId: 0, userEmail: email, weekStart, projectId: 0, taskId: 0, activityId: 0, billable: true, hours: {}, notes: {}, total: 0, custom: {}, costRate: 0, billRate: 0 };
+  return { id: 0, sheetId: 0, userEmail: email, weekStart, projectId: 0, taskId: 0, activityId: 0, billable: true, hours: {}, notes: {}, total: 0, custom: {}, costRate: 0, billRate: 0, tmSync: {} };
 }
 
 /** The week's lines as an editable grid: project / task / activity / billable / custom columns, hours per day, notes. */
@@ -80,7 +80,7 @@ export function SheetGrid(props: ISheetGridProps): JSX.Element {
     const a = ref.activities.filter((x) => x.id === e.activityId)[0];
     return {
       title: p ? (p.code ? `${p.code} · ${p.title}` : p.title) : a && a.isTimeOff ? 'Time off' : e.projectId ? '(removed project)' : '—',
-      sub: [task ? task.title : '', a ? a.title : ''].filter((x) => !!x).join(' · '),
+      sub: [task ? task.title : '', a ? a.title : '', e.tmSync && e.tmSync.imported && e.tmSync.imported.length ? 'from Task Manager' : '', e.tmSync && e.tmSync.pushed && e.tmSync.pushed.length ? 'in Task Manager ✓' : ''].filter((x) => !!x).join(' · '),
       color: (p && p.color) || (a && a.color) || '#c8d0d2'
     };
   };

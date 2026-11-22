@@ -60,6 +60,28 @@ async function previewKey(plan, tenant) {
   return signed + '.' + b64url(sig);
 }
 
+/** A small Brillienta Task Manager installation (TM_ lists), as its own app writes them. */
+function seedTaskManager(author) {
+  const t = today();
+  const who = (e) => ({ EMail: e });
+  seed('TM_Projects', [
+    { Title: 'Customer portal', ProjectCode: 'PORTAL', ProjectStatus: 'Active', PlannedStart: addDays(t, -14) + 'T00:00:00Z', PlannedEnd: addDays(t, 75) + 'T00:00:00Z', BudgetHours: 240, ProjectOwner: who('arjun.mehta@contoso.com'), ProjectMembers: [who('rahul.sharma@contoso.com'), who('sara.khan@contoso.com')], Details: '<p>Self-service portal for Contoso customers.</p>', ColorHex: '#0e7490' },
+    { Title: 'Mobile app v2', ProjectCode: 'APP-02', ProjectStatus: 'Active', PlannedStart: addDays(t, -30) + 'T00:00:00Z', PlannedEnd: addDays(t, 120) + 'T00:00:00Z', BudgetHours: 950, ProjectOwner: who('arjun.mehta@contoso.com'), ProjectMembers: [] },
+    { Title: 'Old intranet', ProjectCode: 'INTRA', ProjectStatus: 'Cancelled', BudgetHours: 0, ProjectOwner: who('priya.nair@contoso.com'), ProjectMembers: [] }
+  ], author);
+  const pid = (code) => fakeLists().TM_Projects.items.filter((x) => x.ProjectCode === code)[0].Id;
+  seed('TM_Tasks', [
+    { Title: 'Sign-in and accounts', TaskNumber: 'TM-101', ProjectId: pid('PORTAL'), StatusKind: 'InProgress', AssigneeEmail: 'rahul.sharma@contoso.com', DueDate: addDays(t, 10) + 'T00:00:00Z', EstimateHours: 24, SpentMinutes: 120 },
+    { Title: 'Order history', TaskNumber: 'TM-102', ProjectId: pid('PORTAL'), StatusKind: 'NotStarted', AssigneeEmail: 'sara.khan@contoso.com', DueDate: addDays(t, 20) + 'T00:00:00Z', EstimateHours: 16, SpentMinutes: 0 },
+    { Title: 'Push notifications', TaskNumber: 'TM-201', ProjectId: pid('APP-02'), StatusKind: 'Waiting', AssigneeEmail: 'rahul.sharma@contoso.com', DueDate: addDays(t, 5) + 'T00:00:00Z', EstimateHours: 12, SpentMinutes: 0 }
+  ], author);
+  const tid = (n) => fakeLists().TM_Tasks.items.filter((x) => x.TaskNumber === n)[0].Id;
+  const week = weekStartOf(t, 1);
+  // Rahul logged two hours on Monday in Task Manager's task timer.
+  seed('TM_TimeEntries', [{ Title: 'Timer', TaskId: tid('TM-101'), ProjectId: pid('PORTAL'), DurationMinutes: 120, WorkNote: 'OAuth setup', Billable: true, WorkDate: week }], { Id: 104, Title: 'Rahul Sharma', EMail: 'rahul.sharma@contoso.com' });
+  seed('TM_TimeEntries', [{ Title: 'Timer', TaskId: tid('TM-201'), ProjectId: pid('APP-02'), DurationMinutes: 90, WorkNote: 'Design review', Billable: true, WorkDate: addDays(week, 1) }], { Id: 101, Title: 'Priya Nair', EMail: 'priya.nair@contoso.com' });
+}
+
 async function main() {
   initializeIcons(undefined, { disableWarnings: true });
   if (params.get('fresh')) return render();
@@ -68,6 +90,8 @@ async function main() {
   cfg.limits = { dailyMin: 0, dailyMax: 10, weeklyMin: 40, weeklyMax: 50, enforcement: 'warn' };
   cfg.autoApproval = { enabled: true, roles: ['admin', 'programManager'], requireWithinRules: true, maxHours: 0 };
   cfg.customColumns = [{ key: 'ticket', label: 'Ticket #', type: 'text', level: 'entry', choices: [], required: false, inReports: true }, { key: 'po', label: 'PO number', type: 'text', level: 'project', choices: [], required: false, inReports: false }];
+  // ?tm=1: connected to Brillienta Task Manager (TM_ lists on the same site, seeded below).
+  if (params.get('tm')) cfg.taskManager = { ...cfg.taskManager, enabled: true, autoSync: true, pushTime: 'approved', importTime: true };
   cfg.holidays = [{ date: addDays(weekStartOf(today(), 1), 14 + 2), name: 'Company day' }];
   const installedAt = params.get('installed') ? new Date(Date.now() - Number(params.get('installed')) * 86400000).toISOString() : new Date(Date.now() - 3 * 86400000).toISOString();
   seed(
@@ -152,6 +176,7 @@ async function main() {
   const sheetId = (k) => fakeLists().TS_Timesheets.items.filter((x) => x.Title === k)[0].Id;
   seed('TS_TimeEntries', entries.map((e) => { const { __sheet, ...rest } = e; return { ...rest, SheetId: sheetId(__sheet), Title: __sheet }; }), author);
   seed('TS_Notifications', [{ Title: 'Timesheet to approve: Rahul Sharma, week of last week', Body: 'Rahul Sharma submitted 40 hours (32 billable).', LinkPath: 'approvals', Recipient: me.email, IsRead: false, Kind: 'sheetSubmitted' }], author);
+  if (params.get('tm')) seedTaskManager(author);
   ['TS_Tickets', 'TS_SupportTickets', 'TS_EmailQueue', 'TS_AuditLog', 'TS_SavedReports'].forEach((l) => seed(l, [], author));
   // ?plan=: a licence for that plan, as if activated (signed with the preview key pair).
   if (params.get('plan')) seed('TS_Settings', [{ Title: 'LicenseKey', SettingValue: await previewKey(params.get('plan'), '6f1c2a9e-0b7d-4c55-9e3a-2d8f41b07c13') }], author);

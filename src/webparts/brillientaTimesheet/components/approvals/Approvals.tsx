@@ -83,7 +83,7 @@ export function Approvals(): JSX.Element {
     if (!why) return;
     setBusy(true);
     try {
-      await workflow.reopen(actor, i.sheet, why);
+      await workflow.reopen(actor, i.sheet, why, i.entries);
       toast('Reopened.', 'success');
       setOpen(undefined);
       reload();

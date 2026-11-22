@@ -127,6 +127,7 @@ export function toProject(r: Row): IProject {
     endNotices: str(r.EndNotices)
       .split(',')
       .filter((s) => !!s),
+    tmProjectId: num(r.TmProjectId),
     modified: str(r.Modified)
   };
 }
@@ -151,6 +152,7 @@ export function fromProject(p: Partial<IProject>): Row {
   if (p.color !== undefined) out.ColorHex = p.color;
   if (p.custom !== undefined) out.CustomValues = JSON.stringify(p.custom);
   if (p.endNotices !== undefined) out.EndNotices = p.endNotices.join(',');
+  if (p.tmProjectId !== undefined) out.TmProjectId = p.tmProjectId;
   return out;
 }
 
@@ -168,7 +170,8 @@ export function toTask(r: Row): ITask {
     dueDate: dateOnly(r.DueDate),
     selfAssign: bool(r.SelfAssign, true),
     plannerTaskId: str(r.PlannerTaskId),
-    plannerPlanId: str(r.PlannerPlanId)
+    plannerPlanId: str(r.PlannerPlanId),
+    tmTaskId: num(r.TmTaskId)
   };
 }
 
@@ -185,6 +188,7 @@ export function fromTask(t: Partial<ITask>): Row {
   if (t.selfAssign !== undefined) out.SelfAssign = t.selfAssign;
   if (t.plannerTaskId !== undefined) out.PlannerTaskId = t.plannerTaskId;
   if (t.plannerPlanId !== undefined) out.PlannerPlanId = t.plannerPlanId;
+  if (t.tmTaskId !== undefined) out.TmTaskId = t.tmTaskId;
   return out;
 }
 
@@ -259,7 +263,8 @@ export function toEntry(r: Row): ITimeEntry {
     total: num(r.TotalHours),
     custom: json<Record<string, string | number | boolean>>(r.CustomValues, {}),
     costRate: num(r.CostRate),
-    billRate: num(r.BillRate)
+    billRate: num(r.BillRate),
+    tmSync: json(r.TmSync, {})
   };
 }
 
@@ -290,7 +295,8 @@ export function fromEntry(e: ITimeEntry): Row {
     TotalHours: entryTotal({ hours }),
     CustomValues: JSON.stringify(e.custom || {}),
     CostRate: e.costRate || 0,
-    BillRate: e.billRate || 0
+    BillRate: e.billRate || 0,
+    TmSync: JSON.stringify(e.tmSync || {})
   };
 }
 

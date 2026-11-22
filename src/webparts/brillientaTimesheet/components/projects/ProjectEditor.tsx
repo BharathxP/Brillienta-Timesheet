@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Checkbox, DatePicker, DefaultButton, Dropdown, Panel, PanelType, PrimaryButton, TextField, Toggle } from '@fluentui/react';
+import { Checkbox, DatePicker, DefaultButton, Dropdown, MessageBar, MessageBarType, Panel, PanelType, PrimaryButton, TextField, Toggle } from '@fluentui/react';
 import { useApp } from '../AppContext';
 import { ICustomColumn, IProject } from '../../models/types';
 import { PeopleField } from '../common/Pickers';
@@ -28,7 +28,8 @@ export function newProject(managerEmail: string, color: string): IProject {
     memberRates: {},
     color,
     custom: {},
-    endNotices: []
+    endNotices: [],
+    tmProjectId: 0
   };
 }
 
@@ -104,6 +105,12 @@ export function ProjectEditor(props: { project: IProject; onDismiss: () => void;
       )}
     >
       <div className="ts-stack" style={{ paddingTop: 8 }}>
+        {p.tmProjectId > 0 && (
+          <MessageBar messageBarType={MessageBarType.info} isMultiline>
+            Linked to Brillienta Task Manager: its name, code, status, dates, planned hours and people are updated from Task Manager on every sync. Change them there; rates, billable and the other
+            details here are yours.
+          </MessageBar>
+        )}
         <div className="ts-form-grid">
           <TextField label="Project name" required value={p.title} onChange={(_, v) => set({ title: v || '' })} className="is-wide" />
           <TextField label="Code" value={p.code} onChange={(_, v) => set({ code: v || '' })} placeholder="e.g. ACM-001" />

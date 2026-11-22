@@ -181,16 +181,18 @@ export function NotificationsAdmin(): JSX.Element {
 
 // ---------------------------------------------------------------------------------------------- integrations
 
-type ITab = 'timeoff' | 'teams' | 'planner' | 'copilot' | 'automate' | 'api' | 'powerbi';
+type ITab = 'taskmanager' | 'timeoff' | 'teams' | 'planner' | 'copilot' | 'automate' | 'api' | 'powerbi';
 
 export function IntegrationsAdmin(): JSX.Element {
   const draft = useDraft();
   const { d, set } = draft;
-  const { has, timeOff, sp, prefix, appVersion, config, toast, notifier } = useApp();
-  const [tab, setTab] = React.useState<ITab>('timeoff');
+  const { has, timeOff, sp, prefix, appVersion, config, toast, notifier, taskManager, svc, ref, reloadRef } = useApp();
+  const [tab, setTab] = React.useState<ITab>('taskmanager');
+  const [tmTest, setTmTest] = React.useState<string[] | undefined>();
   const [busy, run] = useBusy();
   const [test, setTest] = React.useState<string[] | undefined>();
   const to = d.timeOff;
+  const tm = d.taskManager;
   const i = d.integrations;
   const host = new URL(sp.webUrl).hostname;
   const copilotPkg = (): Promise<void> =>
@@ -210,6 +212,7 @@ export function IntegrationsAdmin(): JSX.Element {
         value={tab}
         onChange={setTab}
         tabs={[
+          { key: 'taskmanager', text: 'Brillienta Task Manager', icon: 'TaskManager', locked: !has('taskManager') },
           { key: 'timeoff', text: 'Time off Manager 365', icon: 'Vacation', locked: !has('timeOff') },
           { key: 'teams', text: 'Teams & Outlook', icon: 'TeamsLogo', locked: !has('teamsOutlook') },
           { key: 'planner', text: 'Planner', icon: 'PlannerLogo', locked: !has('planner') },
@@ -219,6 +222,80 @@ export function IntegrationsAdmin(): JSX.Element {
           { key: 'powerbi', text: 'Power BI', icon: 'PowerBILogo', locked: !has('powerBi') }
         ]}
       />
+      {tab === 'taskmanager' && (
+        <Card title="Brillienta Task Manager" icon="TaskManager">
+          <Gate feature="taskManager">
+            <p className="ts-muted" style={{ marginTop: 0 }}>
+              Projects and tasks come in from Task Manager (it stays the place where they are planned); the hours people log here go back to Task Manager as time entries and add to each task&apos;s
+              time spent. People can also bring the time they logged in Task Manager into their week.
+            </p>
+            <Toggle label="Connect to Brillienta Task Manager" checked={tm.enabled} onChange={(_, v) => set({ taskManager: { ...tm, enabled: !!v } })} />
+            <div className="ts-form-grid">
+              <TextField label="Task Manager site" placeholder="Empty = this site" value={tm.siteUrl} onChange={(_, v) => set({ taskManager: { ...tm, siteUrl: (v || '').trim() } })} />
+              <TextField label="List prefix" value={tm.prefix} onChange={(_, v) => set({ taskManager: { ...tm, prefix: (v || 'TM_').replace(/[^A-Za-z0-9_]/g, '') } })} description="TM_ unless Task Manager was installed with another prefix." />
+              <Toggle label="Bring in Task Manager projects" checked={tm.syncProjects} onChange={(_, v) => set({ taskManager: { ...tm, syncProjects: !!v } })} />
+              <Dropdown
+                label="Projects with these statuses"
+                multiSelect
+                selectedKeys={tm.projectStatuses}
+                options={['Planning', 'Active', 'OnHold', 'Completed', 'Cancelled'].map((k) => ({ key: k, text: k === 'OnHold' ? 'On hold' : k }))}
+                onChange={(_, o) => o && set({ taskManager: { ...tm, projectStatuses: o.selected ? tm.projectStatuses.concat(String(o.key)) : tm.projectStatuses.filter((x) => x !== o.key) } })}
+              />
+              <Toggle label="Bring in the tasks of linked projects" checked={tm.syncTasks} onChange={(_, v) => set({ taskManager: { ...tm, syncTasks: !!v } })} />
+              <Toggle label="Sync automatically (hourly, when an administrator opens the app)" checked={tm.autoSync} onChange={(_, v) => set({ taskManager: { ...tm, autoSync: !!v } })} />
+              <Dropdown
+                label="Write hours back to Task Manager"
+                selectedKey={tm.pushTime}
+                options={[
+                  { key: 'approved', text: 'When a week is approved' },
+                  { key: 'submitted', text: 'When a week is submitted' },
+                  { key: 'never', text: 'Never' }
+                ]}
+                onChange={(_, o) => o && set({ taskManager: { ...tm, pushTime: o.key as typeof tm.pushTime } })}
+              />
+              <Toggle label="People may import the time they logged in Task Manager" checked={tm.importTime} onChange={(_, v) => set({ taskManager: { ...tm, importTime: !!v } })} />
+            </div>
+            <div className="ts-row" style={{ marginTop: 12 }}>
+              <DefaultButton text="Test the connection" disabled={busy || !tm.enabled} onClick={() => void run(async () => setTmTest(await taskManager.test()))} />
+              <DefaultButton
+                text="Sync now"
+                disabled={busy || !config.taskManager.enabled}
+                onClick={() =>
+                  void run(async () => {
+                    const r = await taskManager.sync(svc, ref);
+                    await reloadRef();
+                    toast(`Task Manager: ${r.projectsCreated} projects and ${r.tasksCreated} tasks added; ${r.projectsUpdated} projects and ${r.tasksUpdated} tasks updated.`, 'success');
+                  })
+                }
+              />
+              <DefaultButton
+                text="Send approved hours not yet in Task Manager"
+                disabled={busy || !config.taskManager.enabled || config.taskManager.pushTime === 'never'}
+                onClick={() =>
+                  void run(async () => {
+                    // The last 8 weeks of approved timesheets: lines on linked tasks that have not been sent.
+                    const to8 = new Date();
+                    const from = new Date(to8.getTime() - 56 * 86400000);
+                    const key = (x: Date): string => x.toISOString().substring(0, 10);
+                    const w = await svc.weeks(key(from), key(to8));
+                    const approved = w.sheets.filter((s) => s.status === 'Approved').map((s) => s.id);
+                    const pending = w.entries.filter((e) => approved.indexOf(e.sheetId) >= 0 && !(e.tmSync && ((e.tmSync.pushed && e.tmSync.pushed.length) || (e.tmSync.imported && e.tmSync.imported.length))));
+                    const res = await taskManager.pushWeek(pending, ref);
+                    if (res.changed.length) await svc.saveTmSync(res.changed);
+                    toast(`${res.changed.filter((c) => c.tmSync.pushed && c.tmSync.pushed.length).length} lines sent to Task Manager${res.problems.length ? `; ${res.problems.length} problems: ${res.problems[0]}` : ''}.`, res.problems.length ? 'warning' : 'success');
+                  })
+                }
+              />
+            </div>
+            {tmTest && (tmTest.length ? <div className="ts-status-bad ts-small" style={{ marginTop: 8 }}>{tmTest.join(' ')}</div> : <div className="ts-status-ok ts-small" style={{ marginTop: 8 }}>Task Manager&apos;s projects, tasks and time entries can be read{tm.pushTime !== 'never' ? ' and written' : ''}.</div>)}
+            <div className="ts-muted ts-small" style={{ marginTop: 8 }}>
+              {config.taskManager.lastSyncAt ? `Last automatic sync ${formatDateTime(config.taskManager.lastSyncAt)}. ` : ''}Save the settings before testing or syncing. Hours are written by the approver&apos;s (or submitter&apos;s) account,
+              which needs to be a Task Manager member. Task Manager owns project and task names, status, dates, people and estimates; rates, billable and custom columns stay as set here. Reopening an
+              approved week takes its hours back out of Task Manager.
+            </div>
+          </Gate>
+        </Card>
+      )}
       {tab === 'timeoff' && (
         <Card title="Time off Manager 365" icon="Vacation">
           <Gate feature="timeOff">

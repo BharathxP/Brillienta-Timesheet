@@ -8,6 +8,7 @@ import { Notifier } from '../services/Notifier';
 import { Workflow } from '../services/workflow';
 import { ReminderRunner } from '../services/ReminderRunner';
 import { TimeOffService } from '../services/TimeOffService';
+import { TaskManagerService } from '../services/TaskManagerService';
 import { ILicenseStatus } from '../services/licensing/license';
 import { Feature } from '../services/licensing/plans';
 import { IDirectory } from '../services/access';
@@ -36,6 +37,8 @@ export interface IAppContext {
   settings: SettingsStore;
   graph?: GraphService;
   timeOff: TimeOffService;
+  /** Brillienta Task Manager integration. */
+  taskManager: TaskManagerService;
   notifier: Notifier;
   workflow: Workflow;
   reminders: ReminderRunner;

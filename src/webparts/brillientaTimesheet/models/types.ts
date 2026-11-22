@@ -90,6 +90,8 @@ export interface IProject {
   custom: Record<string, string | number | boolean>;
   /** End-date notifications already sent ("7", "0", "overdue"). */
   endNotices: string[];
+  /** Linked Brillienta Task Manager project (TM_Projects id), 0 = not linked. */
+  tmProjectId: number;
   modified?: string;
 }
 
@@ -107,6 +109,8 @@ export interface ITask {
   selfAssign: boolean;
   plannerTaskId: string;
   plannerPlanId: string;
+  /** Linked Brillienta Task Manager task (TM_Tasks id), 0 = not linked. */
+  tmTaskId: number;
 }
 
 /** A kind of work (development, meetings, testing, travel…), for activity tracking. */
@@ -165,6 +169,17 @@ export interface ITimeEntry {
   /** Rates captured when the week was submitted (so later rate changes do not rewrite history). */
   costRate: number;
   billRate: number;
+  /** Brillienta Task Manager link of the line: time entries written there, or imported from there. */
+  tmSync: ITmSync;
+}
+
+export interface ITmSync {
+  /** TM_TimeEntries ids this line wrote (one per day), and the minutes added to the task's time spent. */
+  pushed?: number[];
+  pushedMinutes?: number;
+  pushedTaskId?: number;
+  /** TM_TimeEntries ids imported into this line (that time is already in Task Manager, so it is never written back). */
+  imported?: number[];
 }
 
 export type TicketStatus = 'Open' | 'In progress' | 'Answered' | 'Closed';
@@ -308,6 +323,28 @@ export interface ITimeOffConfig {
   autoFill: boolean;
 }
 
+/** Brillienta Task Manager integration. */
+export interface ITaskManagerConfig {
+  enabled: boolean;
+  /** Site of Task Manager ('' = this site). */
+  siteUrl: string;
+  /** List prefix of the Task Manager installation (TM_ by default). */
+  prefix: string;
+  /** Bring Task Manager projects in as timesheet projects (linked). */
+  syncProjects: boolean;
+  /** Bring the tasks of linked projects in (assignee, status, due date, estimate). */
+  syncTasks: boolean;
+  /** Only Task Manager projects with these statuses are brought in. */
+  projectStatuses: string[];
+  /** Write timesheet hours back to Task Manager as time entries: when approved, when submitted, or never. */
+  pushTime: 'approved' | 'submitted' | 'never';
+  /** People may import the time they logged in Task Manager into their week. */
+  importTime: boolean;
+  /** Sync automatically when an administrator opens the app (at most hourly). */
+  autoSync: boolean;
+  lastSyncAt: string;
+}
+
 export interface IIntegrationsConfig {
   /** How emails are sent: Outlook (Microsoft Graph, as the signed-in user) or the email queue + Power Automate. */
   mailMode: 'graph' | 'flow';
@@ -366,6 +403,7 @@ export interface ITimesheetConfig {
   plannedHoursAlerts: boolean;
   templates: Record<TemplateKey, IEmailTemplate>;
   timeOff: ITimeOffConfig;
+  taskManager: ITaskManagerConfig;
   integrations: IIntegrationsConfig;
   /** Extra admins (besides site owners and people with the Administrator role). */
   admins: string[];

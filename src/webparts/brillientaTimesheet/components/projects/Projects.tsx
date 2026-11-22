@@ -134,6 +134,7 @@ export function Projects(): JSX.Element {
                       <span className="ts-subject">{p.title}</span>
                       {p.code && <span className="ts-muted ts-small"> · {p.code}</span>}
                       {!p.billable && <span className="ts-chip is-soft" style={{ marginLeft: 6 }}>Non-billable</span>}
+                      {p.tmProjectId > 0 && <span className="ts-chip is-lime" style={{ marginLeft: 6 }} title="Linked to Brillienta Task Manager">Task Manager</span>}
                     </td>
                     <td>{p.client || <span className="ts-muted">—</span>}</td>
                     <td>

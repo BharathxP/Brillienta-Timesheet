@@ -9,6 +9,7 @@ import { IIssue, blocking, validateWeek } from './rules';
 import { entryTotal } from './mappers';
 import { addDays, daysBetween, formatWeek, weekDays } from './dates';
 import { hours } from './format';
+import { TaskManagerService } from './TaskManagerService';
 
 export interface IActor {
   email: string;
@@ -23,7 +24,9 @@ export interface IWorkflowDeps {
   dir: () => IDirectory;
   admins: () => string[];
   /** Plan features in force. */
-  has: (feature: 'userRates' | 'autoApproval' | 'plannedHours') => boolean;
+  has: (feature: 'userRates' | 'autoApproval' | 'plannedHours' | 'taskManager') => boolean;
+  /** Brillienta Task Manager (hours are written back there when configured). */
+  taskManager?: TaskManagerService;
 }
 
 export interface ISubmitResult {
@@ -131,7 +134,9 @@ export class Workflow {
     this._d.notifier.event(auto ? 'timesheet.approved' : 'timesheet.submitted', { sheetId: next.id, person: actor.email, weekStart, hours: next.totalHours, billableHours: next.billableHours, autoApproved: auto });
     await this._d.svc.log(auto ? 'Timesheet auto-approved' : 'Timesheet submitted', `${actor.email} · ${weekStart} · ${next.totalHours} h`);
     await this._afterHours(stamped);
-    return { sheet: next, entries: stamped, issues, autoApproved: auto, approvers };
+    const tm = this._d.config().taskManager.pushTime;
+    const synced = tm === 'submitted' || (auto && tm === 'approved') ? await this._pushToTaskManager(stamped) : stamped;
+    return { sheet: next, entries: synced, issues, autoApproved: auto, approvers };
   }
 
   /** Approve or reject sheets (one or many). Each must be one the actor may approve. */
@@ -164,12 +169,19 @@ export class Workflow {
       this._d.notifier.event(approve ? 'timesheet.approved' : 'timesheet.rejected', { sheetId: i.sheet.id, person: i.sheet.userEmail, weekStart: i.sheet.weekStart, by: actor.email, comment });
     }
     await this._d.svc.log(approve ? 'Timesheets approved' : 'Timesheets rejected', `${allowed.length} by ${actor.email}`);
+    if (approve && this._d.config().taskManager.pushTime === 'approved') {
+      for (const i of allowed) await this._pushToTaskManager(i.entries);
+    }
     return allowed.length;
   }
 
   /** Back to draft: the owner recalls a submitted week, or an approver / admin reopens an approved one. */
-  public async reopen(actor: IActor, sheet: ITimesheet, reason: string): Promise<ITimesheet> {
+  public async reopen(actor: IActor, sheet: ITimesheet, reason: string, entries?: ITimeEntry[]): Promise<ITimesheet> {
     const now = new Date().toISOString();
+    // Hours written to Task Manager are taken back; they go again when the week is approved (or submitted) again.
+    if (entries && entries.some((e) => e.tmSync && e.tmSync.pushed && e.tmSync.pushed.length)) {
+      await this._pushToTaskManager(entries.map((e) => ({ ...e, hours: {} })), true);
+    }
     const next: ITimesheet = { ...sheet, status: 'Draft', decidedBy: '', decidedAt: '', autoApproved: false, comments: sheet.comments.concat([{ at: now, by: actor.name, byEmail: actor.email, text: reason, action: 'reopened' }]) };
     await this._d.svc.saveSheet(next);
     await this._d.svc.log('Timesheet reopened', `${sheet.userEmail} · ${sheet.weekStart} by ${actor.email}`);
@@ -187,8 +199,29 @@ export class Workflow {
       .map((e) => {
         const h: Record<string, number> = {};
         if (withHours) Object.keys(e.hours).forEach((d) => (h[addDays(d, shift)] = e.hours[d]));
-        return { ...e, id: 0, sheetId: 0, weekStart: targetWeek, hours: h, notes: {}, total: 0, costRate: 0, billRate: 0 };
+        return { ...e, id: 0, sheetId: 0, weekStart: targetWeek, hours: h, notes: {}, total: 0, costRate: 0, billRate: 0, tmSync: {} };
       });
+  }
+
+  /**
+   * Write lines' hours to Brillienta Task Manager (see TaskManagerService.pushWeek) and remember what was sent.
+   * Problems are reported, never thrown: the timesheet action has already happened.
+   */
+  private async _pushToTaskManager(entries: ITimeEntry[], withdraw: boolean = false): Promise<ITimeEntry[]> {
+    const tm = this._d.taskManager;
+    if (!tm || !tm.enabled || !this._d.has('taskManager')) return entries;
+    try {
+      const r = await tm.pushWeek(entries, this._d.dir());
+      if (r.changed.length) await this._d.svc.saveTmSync(r.changed.map((c) => (withdraw ? { ...c, tmSync: {} } : c)));
+      if (r.problems.length) this._d.notifier.onProblem(`Hours not fully written to Task Manager: ${r.problems[0]}`);
+      return entries.map((e) => {
+        const c = r.changed.filter((x) => x.id === e.id)[0];
+        return c ? { ...e, tmSync: withdraw ? {} : c.tmSync } : e;
+      });
+    } catch (e) {
+      this._d.notifier.onProblem('Hours not written to Task Manager: ' + (e as Error).message);
+      return entries;
+    }
   }
 
   /** Planned-hours alerts: tell project managers once when logged hours pass the plan. */

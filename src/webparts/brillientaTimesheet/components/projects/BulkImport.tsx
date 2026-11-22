@@ -56,7 +56,7 @@ export function BulkImport(props: { kind: BulkKind; onDismiss: () => void; onDon
               color: PALETTE[(ref.projects.length + i) % PALETTE.length],
               memberRates: {},
               custom: {},
-              endNotices: [],
+              endNotices: [], tmProjectId: 0,
               description: ''
             };
           })
@@ -74,7 +74,8 @@ export function BulkImport(props: { kind: BulkKind; onDismiss: () => void; onDon
             status: 'Open',
             description: '',
             plannerTaskId: '',
-            plannerPlanId: ''
+            plannerPlanId: '',
+            tmTaskId: 0
           }))
         );
       } else {

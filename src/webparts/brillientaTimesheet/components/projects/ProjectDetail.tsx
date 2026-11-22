@@ -17,7 +17,7 @@ import { ReportView } from '../reports/ReportView';
 type Tab = 'overview' | 'tasks' | 'report' | 'team';
 
 export function ProjectDetail(props: { id: number }): JSX.Element {
-  const { ref, role, me, navigate, svc, reloadRef, has, config, toast, graph } = useApp();
+  const { ref, role, me, navigate, svc, reloadRef, has, config, toast, graph, taskManager } = useApp();
   const project = ref.projects.filter((p) => p.id === props.id)[0];
   const [tab, setTab] = React.useState<Tab>('overview');
   const [editing, setEditing] = React.useState(false);
@@ -62,6 +62,7 @@ export function ProjectDetail(props: { id: number }): JSX.Element {
           <span className="ts-row">
             <StatusBadge status={project.status} />
             {!project.billable && <span className="ts-chip is-soft">Non-billable</span>}
+            {project.tmProjectId > 0 && <span className="ts-chip is-lime" title="Name, status, dates, people and tasks come from Brillienta Task Manager">Linked to Task Manager</span>}
             {project.startDate && <span>From {formatDay(project.startDate, true)}</span>}
             {project.endDate && <span>to {formatDay(project.endDate, true)}</span>}
           </span>
@@ -157,6 +158,20 @@ export function ProjectDetail(props: { id: number }): JSX.Element {
               <PrimaryButton iconProps={{ iconName: 'Add' }} text="New task" onClick={() => setTask(newTask(project.id))} />
               {has('bulkCreate') && <DefaultButton iconProps={{ iconName: 'BulkUpload' }} text="Bulk create tasks" onClick={() => setBulk(true)} />}
               {has('planner') && config.integrations.plannerEnabled && graph && <DefaultButton iconProps={{ iconName: 'PlannerLogo' }} text="Import from Planner" onClick={() => setPlanner(true)} />}
+              {has('taskManager') && config.taskManager.enabled && project.tmProjectId > 0 && (
+                <DefaultButton
+                  iconProps={{ iconName: 'Sync' }}
+                  text="Sync from Task Manager"
+                  disabled={busy}
+                  onClick={() =>
+                    void run(async () => {
+                      const r = await taskManager.sync(svc, ref);
+                      await reloadRef();
+                      toast(`${r.tasksCreated} tasks added, ${r.tasksUpdated} updated from Task Manager.`, 'success');
+                    })
+                  }
+                />
+              )}
             </div>
           )}
           {!tasks.length ? (

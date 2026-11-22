@@ -155,11 +155,31 @@ export function WeekSheet(): JSX.Element {
     if (!ok) return;
     setBusy(true);
     try {
-      const next = await workflow.reopen(actor, sheet, 'Recalled by the owner');
+      const next = await workflow.reopen(actor, sheet, 'Recalled by the owner', loaded.entries);
       setLoaded({ ...loaded, sheet: next });
       toast('Back to draft.', 'success');
     } catch (e) {
       toast((e as Error).message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Time logged in Brillienta Task Manager this week, as lines (already in Task Manager, so never written back).
+  const importTm = async (): Promise<void> => {
+    setBusy(true);
+    try {
+      const r = await app.taskManager.importWeek(me.email, week, addDays(week, 6), ref, lines);
+      if (!r.lines.length) {
+        toast(r.skipped ? `${r.skipped} entries are on Task Manager projects that are not linked yet (ask an administrator to sync).` : 'Nothing new logged in Task Manager this week.', 'info');
+        return;
+      }
+      const keep = lines.filter((e) => e.projectId || entryTotal(e) > 0);
+      change(keep.concat(r.lines));
+      const h = r.lines.reduce((s, l) => s + l.total, 0);
+      toast(`${hours(h)} h imported from Task Manager on ${r.lines.length} line${r.lines.length === 1 ? '' : 's'}${r.skipped ? ` (${r.skipped} entries skipped: project not linked)` : ''}. Save or submit to keep them.`, 'success');
+    } catch (e) {
+      toast('Task Manager could not be read: ' + (e as Error).message, 'error');
     } finally {
       setBusy(false);
     }
@@ -185,6 +205,9 @@ export function WeekSheet(): JSX.Element {
         actions={
           <>
             {editable && has('cloneWeek') && <DefaultButton iconProps={{ iconName: 'Copy' }} text="Clone a week" onClick={() => setCloneOpen(true)} disabled={busy} />}
+            {editable && has('taskManager') && config.taskManager.enabled && config.taskManager.importTime && (
+              <DefaultButton iconProps={{ iconName: 'TaskManager' }} text="Import from Task Manager" onClick={() => void importTm()} disabled={busy} />
+            )}
             {editable && <DefaultButton iconProps={{ iconName: 'Save' }} text={dirty ? 'Save draft' : 'Saved'} onClick={() => void save()} disabled={busy || !dirty} />}
             {editable && <PrimaryButton iconProps={{ iconName: 'Send' }} text={status === 'Rejected' ? 'Resubmit' : 'Submit'} onClick={startSubmit} disabled={busy} />}
             {status === 'Submitted' && <DefaultButton iconProps={{ iconName: 'Undo' }} text="Recall" onClick={() => void recall()} disabled={busy} />}

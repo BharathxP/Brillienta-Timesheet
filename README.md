@@ -55,6 +55,7 @@ except the emails and Teams messages you switch on.
 | Disable projects | Enterprise | Projects › Manage › Disable | A disabled project takes no new time; history stays. |
 | Extra users ₹300 | Enterprise | Licence | As above. |
 | Start day of the week | Enterprise | Admin › Week & tracking | Any weekday. |
+| Brillienta Task Manager | Enterprise | Admin › Integrations › Brillienta Task Manager; My timesheet › Import from Task Manager | Task Manager projects and tasks come in (linked; name, status, dates, people, estimates kept in step); approved (or submitted) hours go back as Task Manager time entries and add to each task's time spent; reopening a week takes them back; people can import the time they logged in Task Manager. See [§6](#6-integrations). |
 | Time off Manager 365 | Enterprise | Admin › Integrations › Time off | Reads approved leave from its SharePoint list (any site, mapped columns); shows leave on the grid, counts it towards minimums and can put it on the sheet automatically. |
 | Teams and Outlook connectivity | Enterprise | Admin › Notifications; Integrations › Teams | Emails from the acting person's Outlook (Graph `Mail.Send`) and one-to-one Teams chat messages; Teams app package (personal app + channel tab). |
 | Planner integration | Enterprise | Project › Tasks › Import from Planner | Imports a plan's tasks with assignees and due dates; re-import updates; completing a task can update Planner. |
@@ -154,11 +155,11 @@ the data reads cleanly in Power BI. Defined in `schema/schema.ts` (schema-as-cod
 | TS_Settings | setting | Config (JSON), InstalledAt, LicenseKey, SchemaVersion, ReminderLog |
 | TS_Users | person | Email, UserRole, ManagerEmail, Department, CostRate, BillRate, IsExternal, IsActive, HourRuleId, WorkDays |
 | TS_Programs | programme | ManagerEmails |
-| TS_Projects | project | ProjectCode, Client, ProgramId, ManagerEmails, MemberEmails, IsBillable, ProjectStatus, StartDate, EndDate, PlannedHours, HourlyCost, BillRate, MemberRates, CustomValues |
-| TS_Tasks | task | ProjectId, AssigneeEmails, TaskStatus, PlannedHours, DueDate, SelfAssign, PlannerTaskId |
+| TS_Projects | project | TmProjectId, ProjectCode, Client, ProgramId, ManagerEmails, MemberEmails, IsBillable, ProjectStatus, StartDate, EndDate, PlannedHours, HourlyCost, BillRate, MemberRates, CustomValues |
+| TS_Tasks | task | TmTaskId, ProjectId, AssigneeEmails, TaskStatus, PlannedHours, DueDate, SelfAssign, PlannerTaskId |
 | TS_Activities | activity | IsBillable, IsActive, IsTimeOff |
 | TS_Timesheets | person × week | UserEmail, WeekStart (yyyy-mm-dd), SheetStatus, TotalHours, BillableHours, SubmittedAt, DecidedBy, AutoApproved, Comments |
-| TS_TimeEntries | timesheet line | SheetId, UserEmail, WeekStart, ProjectId, TaskId, ActivityId, IsBillable, DayHours (JSON date → hours), DayNotes, TotalHours, CustomValues, CostRate / BillRate (captured at submit) |
+| TS_TimeEntries | timesheet line | SheetId, UserEmail, WeekStart, ProjectId, TaskId, ActivityId, IsBillable, DayHours (JSON date → hours), DayNotes, TotalHours, CustomValues, CostRate / BillRate (captured at submit), TmSync (what was sent to / imported from Task Manager) |
 | TS_SupportTickets | ticket | Category, Priority, TicketStatus |
 | TS_Notifications | bell notification | Recipient, IsRead, LinkPath |
 | TS_EmailQueue | queued email | MailTo, MailBody, MailStatus (sent by the flow) |
@@ -169,6 +170,21 @@ Rates are captured on each line when a week is submitted, so later rate changes 
 are costed at today's rates.
 
 ## 6. Integrations
+
+- **Brillienta Task Manager** (repository `BharathxP/Brillienta-TaskManager`) — Admin › Integrations › Brillienta
+  Task Manager: its site (empty = this site) and list prefix (`TM_`).
+
+  | Data | Direction | How |
+  | --- | --- | --- |
+  | Projects (`TM_Projects`) | Task Manager → Timesheet | Linked by `TmProjectId`; a timesheet project with the same code is adopted rather than duplicated. Only the chosen statuses are brought in (Planning, Active, On hold by default). Task Manager owns name, code, status (On hold → Disabled, Completed/Cancelled → Completed), dates, budget hours (→ planned hours), owner (→ project manager) and members; rates, billable and custom columns stay as set in Timesheet. |
+  | Tasks (`TM_Tasks`) | Task Manager → Timesheet | Tasks of linked projects, linked by `TmTaskId`: name (with its task number), status, due date, estimate (→ planned hours), assignee. Finished tasks are not created. |
+  | Hours | Timesheet → Task Manager | When a week is approved (or submitted — setting), each line on a linked task adds one `TM_TimeEntries` row per day (`DurationMinutes`, `WorkDate`, `WorkNote`, `Billable`) and the minutes to the task's `SpentMinutes`. What was sent is remembered on the line (`TmSync`), so re-approving replaces it and reopening a week removes it. Lines without a linked task are not sent (Task Manager needs a task). |
+  | Logged time | Task Manager → a person's week | *Import from Task Manager* on My timesheet turns the time the person logged in Task Manager that week into lines. Imported lines are never written back, so nothing is counted twice. |
+
+  Sync runs automatically when an administrator opens the app (at most hourly), from *Sync now*, and from a linked
+  project's Tasks tab. Hours are written by the approver's (or submitter's) account, which must be a Task Manager member
+  (`TM_TimeEntries` is members-only). *Send approved hours not yet in Task Manager* catches up the last eight weeks
+  (e.g. after switching the integration on).
 
 - **Time off Manager 365** — Admin › Integrations › Time off: site (empty = this site), list and the internal names of
   the email, start, end, status and type columns, plus the "approved" value. *Test the connection* checks them.
@@ -226,7 +242,7 @@ npm run preview
   roles, rates, report engine, bulk import, licensing and plans, reminders, cloning, mappers, packages.
 - `npm run preview` — the real app against an in-memory SharePoint with a sample organisation:
   `preview-dist/index.html?role=admin|pm|manager|member`, `&plan=standard|pro`, `&fresh=1` (setup wizard),
-  `&installed=30` (trial ended). The preview signs its own licence keys with a throwaway key pair
+  `&installed=30` (trial ended), `&tm=1` (connected to a seeded Brillienta Task Manager). The preview signs its own licence keys with a throwaway key pair
   (`preview/previewKey.js`); the shipped package only contains the real public key.
 - `node tools/icons/make-icons.cjs` — renders the clock logo to the app catalog and Teams icons.
 - `npm run serve` — SPFx workbench on your tenant.
@@ -249,6 +265,7 @@ src/webparts/brillientaTimesheet/
     Provisioner.ts   creates and repairs lists, applies security
     Notifier.ts      bell, email (Outlook or queue), Teams chat, Power Automate events
     GraphService.ts  people, guests, Outlook, Teams, Planner
+    taskManagerSync.ts (pure) + TaskManagerService.ts   Brillienta Task Manager integration
     TimeOffService.ts, ReminderRunner.ts, SettingsStore.ts, licensing/*
   components/
     App.tsx, Shell.tsx, AppContext.ts, Timesheet.module.scss (design system shared with Employee Directory)

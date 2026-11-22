@@ -38,6 +38,7 @@ export type Feature =
   | 'disableProjects'
   | 'weekStart'
   | 'timeOff'
+  | 'taskManager'
   | 'teamsOutlook'
   | 'planner'
   | 'copilot'
@@ -99,6 +100,7 @@ export const FEATURES: Array<{ feature: Feature; label: string; plan: Plan }> = 
   { feature: 'disableProjects', label: 'Disable projects', plan: 'enterprise' },
   { feature: 'weekStart', label: 'Configure the start day of the week', plan: 'enterprise' },
   { feature: 'timeOff', label: 'Integrate with Time off Manager 365', plan: 'enterprise' },
+  { feature: 'taskManager', label: 'Integrate with Brillienta Task Manager', plan: 'enterprise' },
   { feature: 'teamsOutlook', label: 'Teams and Outlook connectivity', plan: 'enterprise' },
   { feature: 'planner', label: 'Planner integration', plan: 'enterprise' },
   { feature: 'copilot', label: 'Copilot integration', plan: 'enterprise' },
@@ -164,6 +166,7 @@ const LOCKS: Array<{ feature: Feature; apply: Mutator }> = [
   { feature: 'trackingDays', apply: (c) => (c.holidays = []) },
   { feature: 'weekStart', apply: (c, d) => (c.weekStart = d.weekStart) },
   { feature: 'timeOff', apply: (c) => (c.timeOff = { ...c.timeOff, enabled: false }) },
+  { feature: 'taskManager', apply: (c) => (c.taskManager = { ...c.taskManager, enabled: false }) },
   { feature: 'teamsOutlook', apply: (c) => (c.integrations = { ...c.integrations, teamsChat: false, mailMode: 'flow' }) },
   { feature: 'planner', apply: (c) => (c.integrations = { ...c.integrations, plannerEnabled: false, plannerWriteBack: false }) },
   { feature: 'copilot', apply: (c) => (c.integrations = { ...c.integrations, copilotEnabled: false }) },
@@ -199,6 +202,7 @@ export function restoreLocked(next: ITimesheetConfig, saved: ITimesheetConfig, p
     trackingDays: ['holidays'],
     weekStart: ['weekStart'],
     timeOff: ['timeOff'],
+    taskManager: ['taskManager'],
     projectEndDates: ['projectEndNotice'],
     hourRules: ['rulesEnabled', 'rules'],
     emailTemplates: ['templates']

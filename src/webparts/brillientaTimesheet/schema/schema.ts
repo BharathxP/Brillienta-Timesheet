@@ -7,7 +7,8 @@
 // People are stored by email (text), not as Person columns, so Microsoft 365 guests (external users) work the same as
 // members and the data reads cleanly in Power BI, Power Automate and the REST API.
 
-export const SCHEMA_VERSION = 1;
+// 2: Brillienta Task Manager links (Projects.TmProjectId, Tasks.TmTaskId, TimeEntries.TmSync).
+export const SCHEMA_VERSION = 2;
 
 export type FieldType = 'Text' | 'Note' | 'Number' | 'Boolean' | 'DateTime' | 'DateOnly' | 'Choice';
 
@@ -123,7 +124,8 @@ export const LISTS: IListDef[] = [
       { name: 'MemberRates', title: 'Person-specific rates (JSON)', type: 'Note' },
       { name: 'ColorHex', title: 'Colour', type: 'Text' },
       { name: 'CustomValues', title: 'Custom columns (JSON)', type: 'Note' },
-      { name: 'EndNotices', title: 'End-date notices sent', type: 'Text' }
+      { name: 'EndNotices', title: 'End-date notices sent', type: 'Text' },
+      { name: 'TmProjectId', title: 'Task Manager project ID', type: 'Number', defaultValue: '0', indexed: true }
     ]
   },
   {
@@ -142,7 +144,8 @@ export const LISTS: IListDef[] = [
       { name: 'DueDate', title: 'Due date', type: 'DateOnly' },
       { name: 'SelfAssign', title: 'Self-assign allowed', type: 'Boolean', defaultValue: '1' },
       { name: 'PlannerTaskId', title: 'Planner task ID', type: 'Text', indexed: true },
-      { name: 'PlannerPlanId', title: 'Planner plan ID', type: 'Text' }
+      { name: 'PlannerPlanId', title: 'Planner plan ID', type: 'Text' },
+      { name: 'TmTaskId', title: 'Task Manager task ID', type: 'Number', defaultValue: '0', indexed: true }
     ]
   },
   {
@@ -198,7 +201,8 @@ export const LISTS: IListDef[] = [
       { name: 'TotalHours', title: 'Total hours', type: 'Number', defaultValue: '0' },
       { name: 'CustomValues', title: 'Custom columns (JSON)', type: 'Note' },
       { name: 'CostRate', title: 'Hourly cost (at submit)', type: 'Number', defaultValue: '0' },
-      { name: 'BillRate', title: 'Bill rate (at submit)', type: 'Number', defaultValue: '0' }
+      { name: 'BillRate', title: 'Bill rate (at submit)', type: 'Number', defaultValue: '0' },
+      { name: 'TmSync', title: 'Task Manager sync (JSON)', type: 'Note' }
     ]
   },
   {

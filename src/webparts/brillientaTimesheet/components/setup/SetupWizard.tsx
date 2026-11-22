@@ -60,12 +60,12 @@ export function SetupWizard(props: IProps): JSX.Element {
       }
       if (sample && !ref.projects.length) {
         const ids = await props.svc.addProjects([
-          { title: 'Website redesign', code: 'WEB-01', client: 'Contoso', managerEmails: [props.me.email], memberEmails: [], billable: true, status: 'Active', startDate: today(), endDate: addDays(today(), 90), plannedHours: 400, hourlyCost: 1200, billRate: 2500, color: PALETTE[0], memberRates: {}, custom: {}, endNotices: [], description: 'Sample project — rename or delete it.', programId: 0 },
-          { title: 'Internal', code: 'INT', client: '', managerEmails: [props.me.email], memberEmails: [], billable: false, status: 'Active', startDate: '', endDate: '', plannedHours: 0, hourlyCost: 0, billRate: 0, color: PALETTE[8], memberRates: {}, custom: {}, endNotices: [], description: 'Internal, non-billable work.', programId: 0 }
+          { title: 'Website redesign', code: 'WEB-01', client: 'Contoso', managerEmails: [props.me.email], memberEmails: [], billable: true, status: 'Active', startDate: today(), endDate: addDays(today(), 90), plannedHours: 400, hourlyCost: 1200, billRate: 2500, color: PALETTE[0], memberRates: {}, custom: {}, endNotices: [], tmProjectId: 0, description: 'Sample project — rename or delete it.', programId: 0 },
+          { title: 'Internal', code: 'INT', client: '', managerEmails: [props.me.email], memberEmails: [], billable: false, status: 'Active', startDate: '', endDate: '', plannedHours: 0, hourlyCost: 0, billRate: 0, color: PALETTE[8], memberRates: {}, custom: {}, endNotices: [], tmProjectId: 0, description: 'Internal, non-billable work.', programId: 0 }
         ]);
         if (ids[0]) {
           await props.svc.addTasks(
-            ['Discovery workshops', 'Design', 'Build', 'Testing & launch'].map((t, i) => ({ title: t, projectId: ids[0], assigneeEmails: [], billable: true, plannedHours: 100, status: i ? 'Open' : 'In progress', dueDate: addDays(weekStartOf(today(), cfg.weekStart), 21 * (i + 1)), selfAssign: true, description: '', plannerTaskId: '', plannerPlanId: '' }))
+            ['Discovery workshops', 'Design', 'Build', 'Testing & launch'].map((t, i) => ({ title: t, projectId: ids[0], assigneeEmails: [], billable: true, plannedHours: 100, status: i ? 'Open' : 'In progress', dueDate: addDays(weekStartOf(today(), cfg.weekStart), 21 * (i + 1)), selfAssign: true, description: '', plannerTaskId: '', plannerPlanId: '', tmTaskId: 0 }))
           );
         }
         add('Sample projects and tasks added', 'success');

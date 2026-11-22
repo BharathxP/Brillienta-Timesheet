@@ -12,6 +12,7 @@ import { Notifier } from '../services/Notifier';
 import { Workflow } from '../services/workflow';
 import { ReminderRunner } from '../services/ReminderRunner';
 import { TimeOffService } from '../services/TimeOffService';
+import { TaskManagerService } from '../services/TaskManagerService';
 import { LogLevel, Provisioner } from '../services/Provisioner';
 import { SCHEMA_VERSION } from '../schema/schema';
 import { mergeConfig } from '../schema/defaults';
@@ -87,6 +88,7 @@ export default function App(props: IAppProps): JSX.Element {
   const graph = React.useMemo(() => (props.graphFactory ? new GraphService(props.graphFactory) : undefined), [props.graphFactory]);
   const timeOff = React.useMemo(() => new TimeOffService(sp), [sp]);
   const configRef = React.useRef<ITimesheetConfig>(mergeConfig(undefined));
+  const taskManager = React.useMemo(() => new TaskManagerService(sp, () => configRef.current.taskManager), [sp]);
   const refRef = React.useRef<IReference>(EMPTY_REF);
   const adminsRef = React.useRef<string[]>([]);
   const licenseRef = React.useRef<ILicenseStatus | undefined>();
@@ -106,9 +108,10 @@ export default function App(props: IAppProps): JSX.Element {
         config: () => configRef.current,
         dir: () => refRef.current,
         admins: () => adminsRef.current,
-        has: hasFeature
+        has: hasFeature,
+        taskManager
       }),
-    [svc, notifier, hasFeature]
+    [svc, notifier, hasFeature, taskManager]
   );
   const reminders = React.useMemo(() => new ReminderRunner(svc, settings, notifier), [svc, settings, notifier]);
 
@@ -282,6 +285,23 @@ export default function App(props: IAppProps): JSX.Element {
       .catch(() => undefined);
   }, [phase.kind, isAdmin, !!license]);
 
+  // Brillienta Task Manager: projects and tasks come in automatically from an administrator's browser, at most hourly.
+  React.useEffect(() => {
+    if (phase.kind !== 'ready' || !isAdmin || !planHas(plan, 'taskManager') || !config.taskManager.enabled || !config.taskManager.autoSync) return;
+    const last = Date.parse(config.taskManager.lastSyncAt || '');
+    if (!isNaN(last) && Date.now() - last < 3600000) return;
+    (async () => {
+      const r = await taskManager.sync(svc, refRef.current);
+      const next = { ...saved, taskManager: { ...saved.taskManager, lastSyncAt: new Date().toISOString() } };
+      await settings.setJson(SETTING_KEYS.config, next);
+      setSaved(next);
+      if (r.projectsCreated + r.projectsUpdated + r.tasksCreated + r.tasksUpdated > 0) {
+        await reloadRef();
+        toast(`Task Manager: ${r.projectsCreated} projects and ${r.tasksCreated} tasks added, ${r.projectsUpdated + r.tasksUpdated} updated.`, 'info');
+      }
+    })().catch((e) => toast('Task Manager sync failed: ' + errorText(e), 'warning'));
+  }, [phase.kind, isAdmin, plan, config.taskManager.enabled]);
+
   // ------------------------------------------------------------------ frame
   const brand = config.brandColor || NAVY;
   const fluentTheme = React.useMemo(() => brandTheme(brand), [brand]);
@@ -379,6 +399,7 @@ export default function App(props: IAppProps): JSX.Element {
       settings,
       graph,
       timeOff,
+      taskManager,
       notifier,
       workflow,
       reminders,

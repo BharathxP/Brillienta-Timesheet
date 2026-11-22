@@ -297,6 +297,11 @@ export class TimesheetService {
     await this._batch(updates.map((u) => ({ method: 'MERGE', path: `${this.items('timesheets')}(${u.id})`, body: M.fromSheet(u.row) }) as IBatchWrite));
   }
 
+  /** Remember what each line sent to (or imported from) Brillienta Task Manager. */
+  public async saveTmSync(lines: Array<{ id: number; tmSync: unknown }>): Promise<void> {
+    await this._batch(lines.filter((l) => l.id).map((l) => ({ method: 'MERGE', path: `${this.items('entries')}(${l.id})`, body: { TmSync: JSON.stringify(l.tmSync || {}) } }) as IBatchWrite));
+  }
+
   /** Capture rates on the lines at submit time. */
   public async stampRates(entries: Array<{ id: number; costRate: number; billRate: number }>): Promise<void> {
     await this._batch(entries.map((e) => ({ method: 'MERGE', path: `${this.items('entries')}(${e.id})`, body: { CostRate: e.costRate, BillRate: e.billRate } }) as IBatchWrite));

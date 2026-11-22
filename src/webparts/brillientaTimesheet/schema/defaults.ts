@@ -80,6 +80,18 @@ export function defaultConfig(orgName: string = ''): ITimesheetConfig {
       typeField: 'LeaveType',
       autoFill: true
     },
+    taskManager: {
+      enabled: false,
+      siteUrl: '',
+      prefix: 'TM_',
+      syncProjects: true,
+      syncTasks: true,
+      projectStatuses: ['Planning', 'Active', 'OnHold'],
+      pushTime: 'approved',
+      importTime: true,
+      autoSync: true,
+      lastSyncAt: ''
+    },
     integrations: {
       mailMode: 'graph',
       teamsChat: false,

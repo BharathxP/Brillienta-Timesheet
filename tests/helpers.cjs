@@ -11,11 +11,11 @@ function user(o = {}) {
 }
 function project(o = {}) {
   n++;
-  return { id: n, title: `Project ${n}`, code: '', client: '', description: '', programId: 0, managerEmails: [], memberEmails: [], billable: true, status: 'Active', startDate: '', endDate: '', plannedHours: 0, hourlyCost: 0, billRate: 0, memberRates: {}, color: '', custom: {}, endNotices: [], ...o };
+  return { id: n, title: `Project ${n}`, code: '', client: '', description: '', programId: 0, managerEmails: [], memberEmails: [], billable: true, status: 'Active', startDate: '', endDate: '', plannedHours: 0, hourlyCost: 0, billRate: 0, memberRates: {}, color: '', custom: {}, endNotices: [], tmProjectId: 0, ...o };
 }
 function entry(o = {}) {
   n++;
-  return { id: n, sheetId: 1, userEmail: 'p@contoso.com', weekStart: '2026-11-16', projectId: 1, taskId: 0, activityId: 0, billable: true, hours: {}, notes: {}, total: 0, custom: {}, costRate: 0, billRate: 0, ...o };
+  return { id: n, sheetId: 1, userEmail: 'p@contoso.com', weekStart: '2026-11-16', projectId: 1, taskId: 0, activityId: 0, billable: true, hours: {}, notes: {}, total: 0, custom: {}, costRate: 0, billRate: 0, tmSync: {}, ...o };
 }
 function sheet(o = {}) {
   n++;

@@ -7,7 +7,7 @@ import { formatDay, fromKey, toKey } from '../../services/dates';
 import { sameEmail } from '../../services/access';
 
 export function newTask(projectId: number): ITask {
-  return { id: 0, title: '', projectId, description: '', assigneeEmails: [], billable: true, plannedHours: 0, status: 'Open', dueDate: '', selfAssign: true, plannerTaskId: '', plannerPlanId: '' };
+  return { id: 0, title: '', projectId, description: '', assigneeEmails: [], billable: true, plannedHours: 0, status: 'Open', dueDate: '', selfAssign: true, plannerTaskId: '', plannerPlanId: '', tmTaskId: 0 };
 }
 
 /** Create or edit a task. Assignees who are new to the task are told (email / Teams / bell). */
