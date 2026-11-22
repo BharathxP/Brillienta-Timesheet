@@ -242,6 +242,15 @@ npm run preview
 - `npm run build` — production build and `.sppkg`.
 - `npm test` — builds, then runs `tests/*.test.cjs` (node:test) against `lib-commonjs`: dates, hour rules, approvals and
   roles, rates, report engine, bulk import, licensing and plans, reminders, cloning, mappers, packages.
+- `npm run e2e` — end-to-end tests in Chromium against the compiled app and an in-memory SharePoint
+  (`tests/e2e/run.cjs`): 15 journeys where several people sign in and out within one session — first-run setup; an
+  administrator building a project (form, task, bulk tasks and activities); a member submitting, the manager sending it
+  back, the member correcting and the manager approving (rates captured, history, read-only); role-based auto approval;
+  blocking hour limits; reports and Excel export matching the data; self-assigning; clone / save / submit / recall;
+  reopening an approved week; the trial ending and a key being activated; the Standard ticket quota; notifications;
+  access by role and plan; phone width; Time off Manager 365 and Brillienta Task Manager. Then `tests/e2e/enterprise.cjs`
+  checks every Enterprise feature (58 checks). Failures leave screenshots in `tests/e2e/output/`;
+  `node tests/e2e/run.cjs J03` runs one journey.
 - `npm run preview` — the real app against an in-memory SharePoint with a sample organisation:
   `preview-dist/index.html?role=admin|pm|manager|member`, `&plan=standard|pro`, `&fresh=1` (setup wizard),
   `&installed=30` (trial ended), `&tm=1` (connected to a seeded Brillienta Task Manager). The preview signs its own licence keys with a throwaway key pair

@@ -183,7 +183,9 @@ export default function App(props: IAppProps): JSX.Element {
       svc.actor = current.title;
       if (!alive) return;
       setMe(current);
-      const installed = await settings.load();
+      // Installed = the setup wizard finished (it saves the install date last). Lists without it come from an
+      // interrupted first setup: the wizard runs again and completes it (it skips what already exists).
+      const installed = (await settings.load()) && !!settings.get(SETTING_KEYS.installedAt);
       if (!installed) {
         setPhase({ kind: current.canManageLists ? 'setup' : 'notInstalled' });
         return;

@@ -127,8 +127,9 @@ export function SheetGrid(props: ISheetGridProps): JSX.Element {
             }
             const projOpts = projectOptions.slice();
             if (e.projectId && !projOpts.some((o) => o.key === e.projectId)) projOpts.unshift({ key: e.projectId, text: label.title });
-            const notesShown = !!notesOpen[i];
             const hasNotes = Object.keys(e.notes).some((k) => !!e.notes[k]);
+            // Read-only weeks (approvers, approved weeks) show the notes straight away; editors open them when needed.
+            const notesShown = notesOpen[i] !== undefined ? notesOpen[i] : readOnly && hasNotes;
             return (
               <React.Fragment key={i}>
                 <tr>

@@ -27,8 +27,10 @@ const PEOPLE = [
   { name: 'Tom Becker', email: 'tom.becker@contoso.com', role: 'member', manager: 'meera.iyer@contoso.com', dept: 'Engineering', title: 'QA Engineer', cost: 1100, bill: 2200 },
   { name: 'Ana Lopez (Fabrikam)', email: 'ana.lopez@fabrikam.com', role: 'member', manager: 'arjun.mehta@contoso.com', dept: 'Contractors', title: 'Consultant', cost: 2000, bill: 3000, external: true }
 ];
-const SIGNED_IN = { admin: 0, pgm: 1, pm: 2, manager: 3, member: 4 }[role] || 0;
-const me = PEOPLE[SIGNED_IN];
+const ROLE_INDEX = { admin: 0, pgm: 1, pm: 2, manager: 3, member: 4, sara: 5, tom: 6, ana: 7 };
+const SIGNED_IN = ROLE_INDEX[role] || 0;
+let me = PEOPLE[SIGNED_IN];
+let currentRole = role;
 const user = { Id: 7, Title: me.name, Email: me.email, LoginName: 'i:0#.f|membership|' + me.email, IsSiteAdmin: role === 'admin' };
 const author = { Id: user.Id, Title: user.Title, EMail: user.Email };
 const http = createFakeHttp(user);
@@ -41,7 +43,7 @@ function render() {
       webUrl: WEB,
       siteTitle: 'Contoso Timesheet',
       user: { displayName: me.name, email: me.email, loginName: user.LoginName },
-      permissions: { manageLists: role === 'admin', manageWeb: role === 'admin' },
+      permissions: { manageLists: currentRole === 'admin', manageWeb: currentRole === 'admin' },
       tenantId: '6f1c2a9e-0b7d-4c55-9e3a-2d8f41b07c13',
       prefix: 'TS_',
       appVersion: APP_VERSION + '.0',
@@ -50,6 +52,22 @@ function render() {
     document.getElementById('root')
   );
 }
+
+/**
+ * End-to-end tests: sign in as someone else without losing the in-memory SharePoint (window.__tsSignIn('manager')).
+ * The app is unmounted and rendered again, like a person opening the page in their own browser.
+ */
+window.__tsSignIn = (who, hash) => {
+  const i = ROLE_INDEX[who] !== undefined ? ROLE_INDEX[who] : 0;
+  currentRole = who;
+  me = PEOPLE[i];
+  Object.assign(user, { Id: 100 + i, Title: me.name, Email: me.email, LoginName: 'i:0#.f|membership|' + me.email, IsSiteAdmin: who === 'admin' });
+  ReactDom.unmountComponentAtNode(document.getElementById('root'));
+  window.location.hash = hash || '#/home';
+  render();
+};
+/** A licence key signed with the preview key pair (licence activation tests). */
+window.__tsPreviewKey = (plan) => previewKey(plan, '6f1c2a9e-0b7d-4c55-9e3a-2d8f41b07c13');
 
 async function previewKey(plan, tenant) {
   const b64url = (bytes) => btoa(String.fromCharCode.apply(null, Array.from(bytes))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');

@@ -16,7 +16,8 @@
     "start": "heft start --clean",
     "serve": "heft start --clean",
     "preview": "heft build --clean && node preview/build.cjs",
-    "license": "node tools/license/license.cjs"
+    "license": "node tools/license/license.cjs",
+    "e2e": "heft build --clean && node preview/build.cjs && node tests/e2e/run.cjs && node tests/e2e/enterprise.cjs"
   },
   "dependencies": {
     "@fluentui/react": "^8.106.4",

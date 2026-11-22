@@ -43,7 +43,6 @@ export function SetupWizard(props: IProps): JSX.Element {
       if (!report.ok) throw new Error('Some lists could not be created: ' + report.lists.filter((l) => l.errors.length).map((l) => `${l.title}: ${l.errors[0]}`).join('; '));
       await props.settings.load();
       const s = props.settings;
-      if (!s.get(SETTING_KEYS.installedAt)) await s.set(SETTING_KEYS.installedAt, new Date().toISOString());
       await s.set(SETTING_KEYS.installedBy, props.me.email);
       await s.set(SETTING_KEYS.schemaVersion, String(SCHEMA_VERSION));
       await s.set(SETTING_KEYS.appVersion, props.appVersion);
@@ -70,6 +69,8 @@ export function SetupWizard(props: IProps): JSX.Element {
         }
         add('Sample projects and tasks added', 'success');
       }
+      // Saved last: until it exists the app treats the site as not set up, so an interrupted setup resumes here.
+      if (!s.get(SETTING_KEYS.installedAt)) await s.set(SETTING_KEYS.installedAt, new Date().toISOString());
       await props.svc.log('Brillienta Timesheet installed', `v${props.appVersion}`);
       add('Done. Open Admin › Schema & security to lock the lists down when you are ready.', 'success');
       props.onDone();
