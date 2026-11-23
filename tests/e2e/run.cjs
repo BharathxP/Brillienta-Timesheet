@@ -110,6 +110,10 @@ async function journey(id, title, browser, fn) {
   const started = Date.now();
   try {
     await fn(page, h(page), log);
+    // List names: the app only ever touches BrillTS_ lists (plus Task Manager's TM_ and the leave list it is pointed at).
+    const names = await page.evaluate(() => (window.__tsLists ? Object.keys(window.__tsLists()) : []));
+    const foreign = names.filter((n) => !/^(BrillTS_|TM_|TOM_)/.test(n));
+    expect(!foreign.length, 'lists outside the BrillTS_ prefix were used: ' + foreign.join(', '));
     expect(!page.errors.length, 'script errors: ' + page.errors.slice(0, 2).join(' / '));
     results.push({ id, title, ok: true, steps, ms: Date.now() - started });
     console.log(`  PASS (${((Date.now() - started) / 1000).toFixed(1)} s)`);
@@ -138,9 +142,11 @@ async function main() {
     await t.click('Create the timesheet');
     await page.waitForSelector('.ts-nav', { timeout: 30000 });
     await page.waitForTimeout(1500);
-    const lists = await t.lists(() => Object.keys(window.__tsLists()).filter((k) => k.indexOf('BrillTS_') === 0));
-    expect(lists.length >= 13, `only ${lists.length} lists created`);
-    log(`${lists.length} lists created`);
+    const lists = await t.lists(() => Object.keys(window.__tsLists()));
+    const expected = ['Settings', 'Users', 'Programs', 'Projects', 'Tasks', 'Activities', 'Timesheets', 'TimeEntries', 'SupportTickets', 'Notifications', 'EmailQueue', 'AuditLog', 'SavedReports'].map((x) => 'BrillTS_' + x);
+    const missing = expected.filter((x) => lists.indexOf(x) < 0);
+    expect(!missing.length, 'lists missing: ' + missing.join(', '));
+    log(`all 13 lists created with the BrillTS_ prefix (${expected.slice(0, 3).join(', ')}, …)`);
     const counts = await t.lists(() => ({ a: window.__tsLists().BrillTS_Activities.items.length, u: window.__tsLists().BrillTS_Users.items.map((x) => x.UserRole + ':' + x.Email), p: window.__tsLists().BrillTS_Projects.items.length, t: window.__tsLists().BrillTS_Tasks.items.length }));
     expect(counts.a === 9 && counts.p === 2 && counts.t === 4, JSON.stringify(counts));
     expect(counts.u.length === 1 && /^admin:/.test(counts.u[0]), 'installer not added as administrator');
