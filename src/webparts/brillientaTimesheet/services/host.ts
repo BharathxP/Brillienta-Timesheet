@@ -53,7 +53,7 @@ export function isShareablePage(url: string): boolean {
 
 /**
  * Base for links that leave this browser (email links, QR codes, "copy link", vCards): the current page when it is a
- * real SharePoint page, otherwise the recorded directory page, otherwise the current page anyway.
+ * real SharePoint page, otherwise the recorded timesheet page, otherwise the current page anyway.
  */
 export function shareableBase(currentHref: string, storedPageUrl: string): string {
   const current = (currentHref || '').split('#')[0];

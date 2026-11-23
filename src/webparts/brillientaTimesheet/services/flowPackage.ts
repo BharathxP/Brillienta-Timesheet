@@ -140,7 +140,7 @@ export function flowDefinition(o: IFlowOptions): Record<string, unknown> {
 export function flowPackageFiles(o: IFlowOptions, now: Date = new Date(), random: () => number = Math.random): Array<{ path: string; content: string }> {
   const flowId = newGuid(random);
   const res = { flow: newGuid(random), spApi: newGuid(random), spConn: newGuid(random), olApi: newGuid(random), olConn: newGuid(random) };
-  const description = `Sends the employee directory's emails: every item added to ${o.listTitle} on ${o.siteUrl} is emailed and marked Sent or Failed.`;
+  const description = `Sends Brillienta Timesheet's emails: every item added to ${o.listTitle} on ${o.siteUrl} is emailed and marked Sent or Failed.`;
   const apiResource = (name: string, displayName: string): Record<string, unknown> => ({
     id: api(name),
     name,

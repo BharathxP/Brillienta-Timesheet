@@ -145,7 +145,7 @@ export function Segmented<T extends string>(props: { value: T; options: Array<{ 
   );
 }
 
-/** Tabs drawn as the directory's view chips. */
+/** Tabs drawn as view chips (the Brillienta design system). */
 export function Tabs<T extends string>(props: { value: T; tabs: Array<{ key: T; text: string; icon?: string; count?: number; locked?: boolean }>; onChange: (v: T) => void }): JSX.Element {
   return (
     <div className="ts-views" role="tablist">

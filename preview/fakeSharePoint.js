@@ -1,5 +1,5 @@
 // In-memory stand-in for the SharePoint REST API, for the local preview only (npm run preview).
-// Implements just what the directory calls: current user, list items (read / create / merge / delete with simple
+// Implements just what the app calls: current user, list items (read / create / merge / delete with simple
 // $filter, $orderby, $top), list change dates and $batch.
 
 const lists = {};
@@ -54,7 +54,7 @@ const fromB64 = (b64) => {
 };
 
 // A small OData $filter: eq/ne/lt/le/gt/ge on strings, numbers, true/false, null and datetime'…', joined by
-// and/or with parentheses (what the directory and Calendar View send).
+// and/or with parentheses (what the app sends).
 function parseFilter(expr) {
   if (!expr) return () => true;
   const src = decodeURIComponent(expr);

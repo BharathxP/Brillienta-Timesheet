@@ -67,7 +67,7 @@ function attrEscape(v: string): string {
 /** A link or image address that is safe in an email: http(s), mailto, tel, an anchor, or a {{placeholder}}. */
 export function safeUrl(raw: string, images: boolean = false): string {
   const v = decodeEntities(raw).trim();
-  // Placeholders: only the directory's own links (values people write, such as a kudos message, never become addresses).
+  // Placeholders: only the app's own links (values people write, such as a note, never become addresses).
   if (/\{\{/.test(v)) return /^\{\{\s*(link|directoryLink)\s*\}\}$/.test(v) ? v : '';
   // Browsers ignore control characters and whitespace inside a scheme ("java\tscript:"), so compare without them.
   // eslint-disable-next-line no-control-regex
