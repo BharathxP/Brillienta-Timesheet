@@ -75,3 +75,19 @@ test('cost and bill rates', () => {
   assert.equal(A.billRate(u, p, 1, false), 2500); // without user-specific rates (Standard)
   assert.equal(A.defaultBillable(project({ billable: false }), { billable: true }, true), false);
 });
+
+test('security groups: each person in the highest group, from roles and reporting lines', () => {
+  const users = [
+    user({ email: 'Adm@c.com', role: 'admin' }),
+    user({ email: 'pm@c.com', role: 'projectManager' }),
+    user({ email: 'boss@c.com' }), // someone reports to them
+    user({ email: 'dev@c.com', managerEmail: 'boss@c.com' }),
+    user({ email: 'guest@x.com', external: true }),
+    user({ email: 'guestpm@x.com', external: true, role: 'projectManager' }),
+    user({ email: 'gone@c.com', role: 'teamManager', active: false })
+  ];
+  const m = A.securityMembers(users, ['listed@c.com', 'pm@c.com']);
+  assert.deepEqual(m.admins, ['listed@c.com', 'pm@c.com', 'adm@c.com']);
+  assert.deepEqual(m.approvers, ['guestpm@x.com', 'boss@c.com']);
+  assert.deepEqual(m.externals, ['guest@x.com']);
+});

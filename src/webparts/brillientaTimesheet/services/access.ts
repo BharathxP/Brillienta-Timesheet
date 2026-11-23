@@ -153,6 +153,22 @@ export function shouldAutoApprove(cfg: ITimesheetConfig, role: Role, totalHours:
   return true;
 }
 
+/**
+ * Who belongs in the BrillTS security groups: administrators (the Administrator role, the admins listed in the
+ * settings, and whoever applies security); approvers (programme, project and team managers, and anyone with people
+ * reporting to them); external users (active guests). Each person is in one group only — the highest. Emails are
+ * lower-case and unique.
+ */
+export function securityMembers(users: ITsUser[], admins: string[]): { admins: string[]; approvers: string[]; externals: string[] } {
+  const uniq = (list: string[]): string[] => list.map(lc).filter((e, i, a) => !!e && a.indexOf(e) === i);
+  const active = users.filter((u) => u.active);
+  const a = uniq(admins.concat(active.filter((u) => u.role === 'admin').map((u) => u.email)));
+  const managerEmails = active.filter((u) => u.role !== 'member' && u.role !== 'admin').map((u) => u.email).concat(active.filter((u) => active.some((x) => sameEmail(x.managerEmail, u.email))).map((u) => u.email));
+  const ap = uniq(managerEmails).filter((e) => a.indexOf(e) < 0);
+  const ex = uniq(active.filter((u) => u.external).map((u) => u.email)).filter((e) => a.indexOf(e) < 0 && ap.indexOf(e) < 0);
+  return { admins: a, approvers: ap, externals: ex };
+}
+
 /** Hourly cost of `user` on `project`, by the cost mode (user-specific cost vs the project's flat hourly cost). */
 export function costRate(mode: CostMode, user: ITsUser | undefined, project: IProject | undefined, fallback: number): number {
   const u = user && user.costRate > 0 ? user.costRate : 0;

@@ -205,7 +205,7 @@ async function main() {
       { Title: 'Rejected', EmployeeEmail: me.email, StartDate: addDays(w, 0) + 'T00:00:00Z', EndDate: addDays(w, 0) + 'T00:00:00Z', RequestStatus: 'Rejected', LeaveType: 'Sick leave' }
     ], author);
   }
-  ['BrillTS_Tickets', 'BrillTS_SupportTickets', 'BrillTS_EmailQueue', 'BrillTS_AuditLog', 'BrillTS_SavedReports'].forEach((l) => seed(l, [], author));
+  ['BrillTS_SupportTickets', 'BrillTS_EmailQueue', 'BrillTS_AuditLog', 'BrillTS_SavedReports'].forEach((l) => seed(l, [], author));
   // ?plan=: a licence for that plan, as if activated (signed with the preview key pair).
   if (params.get('plan')) seed('BrillTS_Settings', [{ Title: 'LicenseKey', SettingValue: await previewKey(params.get('plan'), '6f1c2a9e-0b7d-4c55-9e3a-2d8f41b07c13') }], author);
   render();

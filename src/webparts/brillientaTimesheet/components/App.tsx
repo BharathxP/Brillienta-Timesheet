@@ -19,7 +19,7 @@ import { mergeConfig } from '../schema/defaults';
 import { ILicenseStatus } from '../services/licensing/license';
 import { loadLicenseStatus } from '../services/licensing/LicenseLoader';
 import { Feature, applyPlan, planHas, restoreLocked, userLimit } from '../services/licensing/plans';
-import { canApprove, effectiveRole, reportsOf, sameEmail } from '../services/access';
+import { canApprove, effectiveRole, reportsOf, sameEmail, securityMembers } from '../services/access';
 import { isShareablePage } from '../services/host';
 import { DEFAULT_LOGO } from '../assets/defaultLogo';
 import { Shell } from './Shell';
@@ -304,6 +304,20 @@ export default function App(props: IAppProps): JSX.Element {
     })().catch((e) => toast('Task Manager sync failed: ' + errorText(e), 'warning'));
   }, [phase.kind, isAdmin, plan, config.taskManager.enabled]);
 
+  // The BrillTS security groups follow the roles in the app once security has been applied.
+  const syncSecurityGroups = React.useCallback(async (): Promise<void> => {
+    if (!security || !security.appliedAt) return;
+    try {
+      const fresh = await svc.loadReference();
+      const m = securityMembers(fresh.users, configRef.current.admins);
+      const problems: string[] = [];
+      await new Provisioner(sp, props.prefix).syncGroups({ tenantId: props.tenantId, admins: m.admins, approvers: m.approvers, externals: m.externals }, problems);
+      if (problems.length) toast(`BrillTS security groups updated with problems: ${problems[0]}`, 'warning');
+    } catch (e) {
+      toast(`Saved, but the BrillTS security groups could not be updated (${errorText(e)}). A site owner can run Admin › Schema & security › Apply security.`, 'warning');
+    }
+  }, [security, svc, sp, props.prefix, props.tenantId, toast]);
+
   // ------------------------------------------------------------------ frame
   const brand = config.brandColor || NAVY;
   const fluentTheme = React.useMemo(() => brandTheme(brand), [brand]);
@@ -410,8 +424,11 @@ export default function App(props: IAppProps): JSX.Element {
       saveConfig: async (c: ITimesheetConfig, what?: string) => {
         const toSave = restoreLocked(c, saved, plan, license && license.addons);
         await settings.setJson(SETTING_KEYS.config, toSave);
+        const adminsChanged = JSON.stringify(saved.admins) !== JSON.stringify(toSave.admins);
+        configRef.current = { ...configRef.current, admins: toSave.admins };
         setSaved(toSave);
         await svc.log('Settings saved', what || '');
+        if (adminsChanged) await syncSecurityGroups();
       },
       me: me as ICurrentUser,
       myUser,
@@ -435,6 +452,7 @@ export default function App(props: IAppProps): JSX.Element {
       },
       security,
       setSecurity,
+      syncSecurityGroups,
       approvalsCount,
       refreshApprovals: () => setApprovalsTick((t) => t + 1),
       notificationsVersion,

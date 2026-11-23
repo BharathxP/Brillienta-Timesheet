@@ -9,7 +9,7 @@ import { sameEmail } from '../../services/access';
 
 /** Programmes group projects; their programme managers manage, approve and report on all of them (Pro). */
 export function Programs(): JSX.Element {
-  const { ref, has, svc, reloadRef, isAdmin, me, navigate } = useApp();
+  const { ref, has, svc, reloadRef, isAdmin, me, navigate, syncSecurityGroups } = useApp();
   const [editing, setEditing] = React.useState<IProgram | undefined>();
   const [busy, run] = useBusy();
   const [ask, dialog] = useConfirm();
@@ -33,6 +33,7 @@ export function Programs(): JSX.Element {
       }
       setEditing(undefined);
       await reloadRef();
+      await syncSecurityGroups();
     }, 'Programme saved.');
   return (
     <>

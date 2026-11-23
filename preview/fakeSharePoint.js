@@ -170,6 +170,42 @@ export function createFakeHttp(user) {
       const b64 = (window.__edPreviewFiles || {})['att:' + u];
       return b64 ? response(200, '', fromB64(b64)) : response(404, { 'odata.error': { message: { value: 'File not found' } } });
     }
+    // SharePoint groups (window.__tsGroups: id → { Id, Title, Description, users }) and the site owners group.
+    if (/\/_api\/web\/associatedownergroup/.test(path)) return response(200, { Id: 3, Title: 'Contoso Timesheet Owners' });
+    const sg = /\/_api\/web\/sitegroups(?:\((\d+)\))?(\/users(?:\/removebyid\((\d+)\))?)?/.exec(path);
+    if (sg) {
+      window.__tsGroups = window.__tsGroups || {};
+      const groups = window.__tsGroups;
+      const gid = sg[1] ? Number(sg[1]) : undefined;
+      if (gid === undefined) {
+        if (method === 'GET') {
+          const f = /Title eq '((?:[^']|'')*)'/.exec(decodeURIComponent(path));
+          const all = Object.keys(groups).map((k) => groups[k]);
+          return response(200, { value: f ? all.filter((g) => g.Title === f[1].replace(/''/g, "'")) : all });
+        }
+        const data = JSON.parse(body || '{}');
+        const id = 500 + Object.keys(groups).length;
+        groups[id] = { Id: id, Title: data.Title, Description: data.Description, users: [] };
+        window.__edPrincipals = window.__edPrincipals || {};
+        window.__edPrincipals[id] = 'group:' + data.Title;
+        return response(201, { Id: id, Title: data.Title });
+      }
+      const g = groups[gid];
+      if (!g) return response(404, { 'odata.error': { message: { value: 'Group not found' } } });
+      if (!sg[2]) {
+        if (verb === 'MERGE') Object.assign(g, JSON.parse(body || '{}'));
+        return response(verb === 'MERGE' ? 204 : 200, g);
+      }
+      if (sg[3]) {
+        g.users = g.users.filter((u) => u.Id !== Number(sg[3]));
+        return response(200);
+      }
+      if (method === 'GET') return response(200, { value: g.users });
+      const login = JSON.parse(body || '{}').LoginName || '';
+      const email = login.replace(/^i:0#\.f\|membership\|/, '').toLowerCase();
+      if (!g.users.some((u) => u.Email === email)) g.users.push({ Id: 2000 + Math.floor(Math.random() * 1e6), Email: email, LoginName: login });
+      return response(201, {});
+    }
     const title = titleOf(path);
     if (!title) return response(404, { 'odata.error': { message: { value: 'Not found in preview: ' + path } } });
     const l = list(title);
@@ -209,6 +245,16 @@ export function createFakeHttp(user) {
       return response(200, { value: row.__files.map((n) => ({ FileName: n, ServerRelativeUrl: base + n })) });
     }
     // Item and list permissions: remembered on the item (__readers, __unique) so a browser test can check them.
+    if (/breakroleinheritance|resetroleinheritance|roleassignments/.test(path) && id === undefined) {
+      // List permissions: l.__unique and l.__roles (principal id → role definition id).
+      l.__roles = l.__roles || {};
+      if (/breakroleinheritance/.test(path)) l.__unique = true;
+      const grant = /addroleassignment\(principalid=(\d+),roledefid=(\d+)\)/.exec(path);
+      if (grant) l.__roles[grant[1]] = Number(grant[2]);
+      const drop = /getbyprincipalid\((\d+)\)\/deleteobject/.exec(path);
+      if (drop) delete l.__roles[drop[1]];
+      return response(200, method === 'GET' ? { value: [] } : {});
+    }
     if (/breakroleinheritance|resetroleinheritance|roleassignments/.test(path)) {
       const row = id !== undefined ? l.items.filter((x) => x.Id === id)[0] : undefined;
       if (row && /breakroleinheritance/.test(path)) Object.assign(row, { HasUniqueRoleAssignments: true, __readers: [] });
@@ -249,7 +295,12 @@ export function createFakeHttp(user) {
       l.items.push(row);
       return response(201, row);
     }
-    return response(200, { Id: '0f8fad5b-d9cb-469f-a165-70867728950e', EnableAttachments: false, EnableVersioning: false, ItemCount: l.items.length });
+    if (verb === 'MERGE' && body) {
+      // List settings (ReadSecurity, WriteSecurity, Hidden…).
+      l.__props = Object.assign(l.__props || {}, JSON.parse(body));
+      return response(204);
+    }
+    return response(200, { Id: '0f8fad5b-d9cb-469f-a165-70867728950e', EnableAttachments: false, EnableVersioning: false, ItemCount: l.items.length, HasUniqueRoleAssignments: !!l.__unique, ...(l.__props || {}) });
   };
 
   const batch = (body) => {

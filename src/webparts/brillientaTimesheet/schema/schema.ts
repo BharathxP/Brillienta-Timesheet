@@ -16,6 +16,30 @@ export const SCHEMA_VERSION = 1;
  */
 export const LIST_PREFIX = 'BrillTS_';
 
+/** The brand as it appears in SharePoint group names ("BrillTS Administrators"). */
+export const BRAND = 'BrillTS';
+
+export type SecurityGroupKey = 'admins' | 'approvers' | 'externals';
+
+/**
+ * SharePoint groups "Apply security" creates and keeps in step with the roles in the app (Admin › Schema & security).
+ * The timesheet lists are granted to these groups, so IT sees who has access in Site settings › People and groups.
+ */
+export const SECURITY_GROUPS: Record<SecurityGroupKey, { title: string; description: string }> = {
+  admins: {
+    title: `${BRAND} Administrators`,
+    description: 'Brillienta Timesheet administrators: edit every timesheet list. Members are kept in step by the app (Admin › Schema & security).'
+  },
+  approvers: {
+    title: `${BRAND} Approvers`,
+    description: 'Brillienta Timesheet managers and approvers: see and edit every timesheet; manage projects, tasks and people. Kept in step by the app.'
+  },
+  externals: {
+    title: `${BRAND} External Users`,
+    description: 'Microsoft 365 guests who track time in Brillienta Timesheet (they are not in "Everyone except external users"). Kept in step by the app.'
+  }
+};
+
 export type FieldType = 'Text' | 'Note' | 'Number' | 'Boolean' | 'DateTime' | 'DateOnly' | 'Choice';
 
 export interface IFieldDef {

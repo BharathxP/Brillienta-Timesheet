@@ -70,6 +70,8 @@ export interface IAppContext {
   saveLogo: (dataUrl: string) => Promise<void>;
   security?: ISecurityMeta;
   setSecurity: (m: ISecurityMeta) => void;
+  /** After roles change: bring the BrillTS security groups' members in step (only once security has been applied). */
+  syncSecurityGroups: () => Promise<void>;
   approvalsCount: number;
   refreshApprovals: () => void;
   notificationsVersion: number;

@@ -112,7 +112,8 @@ async function journey(id, title, browser, fn) {
     await fn(page, h(page), log);
     // List names: the app only ever touches BrillTS_ lists (plus Task Manager's TM_ and the leave list it is pointed at).
     const names = await page.evaluate(() => (window.__tsLists ? Object.keys(window.__tsLists()) : []));
-    const foreign = names.filter((n) => !/^(BrillTS_|TM_|TOM_)/.test(n));
+    const known = ['Settings', 'Users', 'Programs', 'Projects', 'Tasks', 'Activities', 'Timesheets', 'TimeEntries', 'SupportTickets', 'Notifications', 'EmailQueue', 'AuditLog', 'SavedReports'].map((x) => 'BrillTS_' + x);
+    const foreign = names.filter((n) => !/^(TM_|TOM_)/.test(n) && known.indexOf(n) < 0);
     expect(!foreign.length, 'lists outside the BrillTS_ prefix were used: ' + foreign.join(', '));
     expect(!page.errors.length, 'script errors: ' + page.errors.slice(0, 2).join(' / '));
     results.push({ id, title, ok: true, steps, ms: Date.now() - started });
@@ -497,6 +498,56 @@ async function main() {
     // 8 h on the linked task (4 + 4); Rahul's other lines are not on Task Manager tasks; the imported 2 h is not sent back.
     expect(spentAfter - spentBefore === 480, `spent ${spentBefore} → ${spentAfter}`);
     log('2 h imported from Task Manager (not sent back); 8 h approved and written to Task Manager (+480 min)');
+  });
+
+  await journey('J16', 'Security: BrillTS groups created, kept in step with roles, lists granted to them', browser, async (page, t, log) => {
+    await t.open('role=admin', 'admin/security');
+    expect(await page.isVisible('text=BrillTS Administrators') && (await page.isVisible('text=BrillTS Approvers')) && (await page.isVisible('text=BrillTS External Users')), 'group names not shown');
+    await t.click('Apply security');
+    await t.toast(/Security applied/, 20000);
+    const groups = await t.lists(() => Object.values(window.__tsGroups || {}).map((g) => ({ id: g.Id, title: g.Title, members: g.users.map((u) => u.Email).sort(), open: g.OnlyAllowMembersViewMembership === false })));
+    const by = (title) => groups.filter((g) => g.title === title)[0];
+    expect(groups.length === 3 && groups.every((g) => /^BrillTS /.test(g.title)), 'groups: ' + groups.map((g) => g.title).join(', '));
+    log('created: ' + groups.map((g) => g.title).join(', '));
+    expect(JSON.stringify(by('BrillTS Administrators').members) === JSON.stringify(['priya.nair@contoso.com']), 'admins: ' + by('BrillTS Administrators').members);
+    expect(JSON.stringify(by('BrillTS Approvers').members) === JSON.stringify(['arjun.mehta@contoso.com', 'meera.iyer@contoso.com', 'vikram.rao@contoso.com']), 'approvers: ' + by('BrillTS Approvers').members);
+    expect(JSON.stringify(by('BrillTS External Users').members) === JSON.stringify(['ana.lopez@fabrikam.com']), 'externals: ' + by('BrillTS External Users').members);
+    expect(groups.every((g) => g.open), 'membership not visible to the site');
+    log('members from the roles: 1 administrator, 3 approvers (programme, project and team managers), 1 external user');
+    const EDIT = 1073741830;
+    const CONTRIBUTE = 1073741827;
+    const READ = 1073741826;
+    const perms = await t.lists(() => {
+      const out = {};
+      Object.keys(window.__tsLists()).filter((k) => k.indexOf('BrillTS_') === 0).forEach((k) => {
+        const l = window.__tsLists()[k];
+        out[k] = { unique: !!l.__unique, roles: l.__roles || {}, read: (l.__props || {}).ReadSecurity };
+      });
+      return out;
+    });
+    const role = (list, title) => perms[list].roles[by(title).id];
+    expect(Object.keys(perms).length === 13 && Object.values(perms).every((p) => p.unique), 'not every list has its own permissions');
+    expect(role('BrillTS_TimeEntries', 'BrillTS Approvers') === EDIT && role('BrillTS_TimeEntries', 'BrillTS Administrators') === EDIT && role('BrillTS_TimeEntries', 'BrillTS External Users') === CONTRIBUTE, 'time entries grants ' + JSON.stringify(perms.BrillTS_TimeEntries.roles));
+    expect(perms.BrillTS_TimeEntries.read === 2 && perms.BrillTS_Timesheets.read === 2, 'timesheets not limited to own rows');
+    expect(role('BrillTS_Settings', 'BrillTS Approvers') === READ && role('BrillTS_Settings', 'BrillTS Administrators') === EDIT && role('BrillTS_Projects', 'BrillTS Approvers') === EDIT && role('BrillTS_Projects', 'BrillTS External Users') === READ, 'settings / projects grants');
+    log('13 lists with their own permissions: timesheets own-rows-only; approvers and administrators edit all; guests contribute; settings read-only except administrators');
+    await t.go('people');
+    await page.locator('td:has-text("Tom Becker")').click();
+    await t.dropdownByLabel('Role', 'Project Manager');
+    await t.click('Save', '.ms-Panel-main');
+    await t.toast(/Saved/);
+    await page.waitForTimeout(1500);
+    const approvers = await t.lists(() => Object.values(window.__tsGroups).filter((g) => g.Title === 'BrillTS Approvers')[0].users.map((u) => u.Email));
+    expect(approvers.indexOf('tom.becker@contoso.com') >= 0, 'role change not reflected: ' + approvers);
+    log('Tom made a Project Manager → added to BrillTS Approvers automatically');
+    await page.locator('td:has-text("Ana Lopez")').click();
+    await page.locator('.ms-Panel-main .ms-Toggle:has-text("Active") button').click();
+    await t.click('Save', '.ms-Panel-main');
+    await t.toast(/Saved/);
+    await page.waitForTimeout(1500);
+    const ext = await t.lists(() => Object.values(window.__tsGroups).filter((g) => g.Title === 'BrillTS External Users')[0].users.length);
+    expect(ext === 0, 'deactivated guest still in BrillTS External Users');
+    log('Ana deactivated → removed from BrillTS External Users automatically');
   });
 
   await browser.close();

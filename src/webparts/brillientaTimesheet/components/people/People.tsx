@@ -15,7 +15,7 @@ function blankUser(): ITsUser {
 
 /** People who track time: role, manager, department, user-specific hourly cost and bill rate, external users. */
 export function People(): JSX.Element {
-  const { ref, reloadRef, has, config, license, graph } = useApp();
+  const { ref, reloadRef, has, config, license, graph, syncSecurityGroups } = useApp();
   const [q, setQ] = React.useState('');
   const [roleFilter, setRoleFilter] = React.useState('');
   const [showInactive, setShowInactive] = React.useState(false);
@@ -116,7 +116,7 @@ export function People(): JSX.Element {
           onDismiss={() => setEditing(undefined)}
           onSaved={() => {
             setEditing(undefined);
-            void reloadRef();
+            void reloadRef().then(syncSecurityGroups);
           }}
         />
       )}
@@ -125,7 +125,7 @@ export function People(): JSX.Element {
           onDismiss={() => setExternal(false)}
           onDone={() => {
             setExternal(false);
-            void reloadRef();
+            void reloadRef().then(syncSecurityGroups);
           }}
         />
       )}
@@ -134,7 +134,7 @@ export function People(): JSX.Element {
           onDismiss={() => setGroupImport(false)}
           onDone={() => {
             setGroupImport(false);
-            void reloadRef();
+            void reloadRef().then(syncSecurityGroups);
           }}
         />
       )}

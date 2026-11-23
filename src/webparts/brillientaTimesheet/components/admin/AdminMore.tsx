@@ -14,7 +14,9 @@ import { LogLevel, Provisioner, ISchemaReport } from '../../services/Provisioner
 import { SETTING_KEYS } from '../../services/SettingsStore';
 import { describeStatus } from '../../services/licensing/license';
 import { planHas, planInfo, userLimit } from '../../services/licensing/plans';
-import { listTitle } from '../../schema/schema';
+import { SECURITY_GROUPS, listTitle } from '../../schema/schema';
+import { securityMembers } from '../../services/access';
+import { IGroupSync } from '../../services/Provisioner';
 import { Card, Kpi, Loading, Tabs, useBusy, useConfirm, useLoader } from '../common/Ui';
 import { Gate, SaveBar, useDraft } from './AdminPage';
 import { KeyEntry, PlanCards } from './LicenseAdmin';
@@ -499,7 +501,7 @@ export function LicenceAdmin(): JSX.Element {
 // ---------------------------------------------------------------------------------------------- schema & security
 
 export function SecurityAdmin(): JSX.Element {
-  const { sp, prefix, ref, admins, tenantId, settings, security, setSecurity, svc, me, toast } = useApp();
+  const { sp, prefix, ref, tenantId, settings, security, setSecurity, svc, me, toast, config } = useApp();
   const [log, setLog] = React.useState<Array<{ m: string; l: LogLevel }>>([]);
   const [report, setReport] = React.useState<ISchemaReport | undefined>();
   const [busy, run] = useBusy();
@@ -507,8 +509,8 @@ export function SecurityAdmin(): JSX.Element {
   const audit = useLoader(() => svc.audit(100), []);
   const add = (m: string, l: LogLevel): void => setLog((x) => x.concat({ m, l }));
   const prov = new Provisioner(sp, prefix);
-  const managers = ref.users.filter((u) => u.active && u.role !== 'member' && u.role !== 'admin').map((u) => u.email);
-  const teamManagers = ref.users.filter((u) => u.active && ref.users.some((x) => x.managerEmail.toLowerCase() === u.email.toLowerCase())).map((u) => u.email);
+  const members = securityMembers(ref.users, config.admins);
+  const [groups, setGroups] = React.useState<IGroupSync[] | undefined>();
   return (
     <div className="ts-stack">
       <Card title="Lists" icon="Database">
@@ -527,9 +529,44 @@ export function SecurityAdmin(): JSX.Element {
       </Card>
       <Card title="Security" icon="Lock">
         <p style={{ marginTop: 0 }}>
-          Applies the permission model: everyone (and each external user) reads projects and settings and writes only their own timesheets; approvers ({managers.length + teamManagers.length}) see and edit all timesheets and manage projects;
-          administrators ({admins.length}) edit everything. Run it again after adding approvers, administrators or external users.
+          Creates three SharePoint groups, keeps their members in step with the roles in this app, and grants the timesheet lists to them. Everyone (and each external user) reads projects and
+          settings and writes only their own timesheets.
         </p>
+        <div className="ts-table-wrap" style={{ marginBottom: 10 }}>
+          <table className="ts-table">
+            <thead>
+              <tr>
+                <th>SharePoint group</th>
+                <th>Who is in it</th>
+                <th style={{ textAlign: 'right' }}>Members</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(
+                [
+                  ['admins', 'Administrator role and the administrators listed in Admin › General (site owners already have full control)', members.admins.length],
+                  ['approvers', 'Programme, project and team managers, and anyone people report to', members.approvers.length],
+                  ['externals', 'Active Microsoft 365 guests who track time', members.externals.length]
+                ] as Array<[keyof typeof SECURITY_GROUPS, string, number]>
+              ).map(([k, who, n]) => {
+                const g = (groups || []).filter((x) => x.key === k)[0];
+                return (
+                  <tr key={k} style={{ cursor: 'default' }}>
+                    <td className="ts-subject">{SECURITY_GROUPS[k].title}</td>
+                    <td className="ts-small">{who}</td>
+                    <td className="ts-number" style={{ textAlign: 'right' }}>
+                      {g ? g.members : n}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div className="ts-muted ts-small">
+          Group members follow the roles automatically when people, programmes or administrators change. Run Apply security again after adding lists to the site or if someone changed
+          permissions by hand.
+        </div>
         {security && security.appliedAt && (
           <div className="ts-small ts-muted">
             Last applied {formatDateTime(security.appliedAt)} by {security.by}.
@@ -541,7 +578,8 @@ export function SecurityAdmin(): JSX.Element {
           styles={{ root: { marginTop: 10 } }}
           onClick={() =>
             void run(async () => {
-              const problems = await prov.applySecurity({ tenantId, admins: admins.concat(me.email), managers: managers.concat(teamManagers), externals: ref.users.filter((u) => u.external && u.active).map((u) => u.email) }, add);
+              const { problems, groups: synced } = await prov.applySecurity({ tenantId, admins: members.admins, approvers: members.approvers, externals: members.externals }, add);
+              setGroups(synced);
               const meta = { appliedAt: new Date().toISOString(), by: me.title };
               await settings.setJson(SETTING_KEYS.security, meta);
               setSecurity(meta);

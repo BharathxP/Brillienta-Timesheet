@@ -66,4 +66,5 @@ admin center (API access):
    `LeaveType`) are placeholders for your installation.
 8. **Brillienta Task Manager** — *Test the connection*, *Sync now*; approve a week with a line on a linked task and
    check the task's time spent in Task Manager.
-9. **Apply security** — sign in as a member and confirm they see only their own timesheets.
+9. **Apply security** — check Site settings › People and groups shows BrillTS Administrators, BrillTS Approvers and
+   BrillTS External Users with the right people; sign in as a member and confirm they see only their own timesheets.

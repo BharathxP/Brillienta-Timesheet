@@ -1,5 +1,5 @@
 import { SPClient, SPError, odataString } from './SPClient';
-import { IFieldDef, IListDef, LISTS, SecurityProfile, expectedTypeAsString, fieldSchemaXml, listTitle } from '../schema/schema';
+import { IFieldDef, IListDef, LISTS, SECURITY_GROUPS, SecurityGroupKey, SecurityProfile, expectedTypeAsString, fieldSchemaXml, listTitle } from '../schema/schema';
 
 export type LogLevel = 'info' | 'success' | 'warning' | 'error';
 export type ProgressFn = (message: string, level: LogLevel) => void;
@@ -21,12 +21,21 @@ export interface ISchemaReport {
 
 export interface ISecurityPlan {
   tenantId?: string;
-  /** Administrators (emails): edit every list. */
+  /** Members of BrillTS Administrators (emails): edit every list. */
   admins: string[];
-  /** Approvers and managers (emails): see and edit every timesheet; edit projects, tasks and people. */
-  managers: string[];
-  /** Microsoft 365 guests who track time (they are not in "Everyone except external users"). */
+  /** Members of BrillTS Approvers (emails): see and edit every timesheet; edit projects, tasks and people. */
+  approvers: string[];
+  /** Members of BrillTS External Users: Microsoft 365 guests who track time (not in "Everyone except external users"). */
   externals: string[];
+}
+
+export interface IGroupSync {
+  key: SecurityGroupKey;
+  title: string;
+  id: number;
+  added: number;
+  removed: number;
+  members: number;
 }
 
 interface ISPField {
@@ -184,40 +193,86 @@ export class Provisioner {
     await this._sp.post(`${listPath}/roleassignments/addroleassignment(principalid=${principalId},roledefid=${roleId})`);
   }
 
+  /** The BrillTS group (created when missing). */
+  private async _group(key: SecurityGroupKey): Promise<number> {
+    const g = SECURITY_GROUPS[key];
+    const found = await this._sp.get<{ value: Array<{ Id: number }> }>(`web/sitegroups?$select=Id&$filter=Title eq ${odataString(g.title)}`);
+    if (found.value.length) return found.value[0].Id;
+    const created = await this._sp.post<{ Id: number }>('web/sitegroups', { Title: g.title, Description: g.description });
+    // Anyone on the site may see who is in it (IT and owners audit access); only owners change it.
+    await this._sp.merge(`web/sitegroups(${created.Id})`, { OnlyAllowMembersViewMembership: false, AllowMembersEditMembership: false, AllowRequestToJoinLeave: false }).catch(() => undefined);
+    return created.Id;
+  }
+
+  /** Make the group's members exactly these people (emails); returns what changed. */
+  private async _syncMembers(groupId: number, emails: string[], external: boolean, problems: string[]): Promise<{ added: number; removed: number; members: number }> {
+    const current = (await this._sp.get<{ value: Array<{ Id: number; Email: string; LoginName: string }> }>(`web/sitegroups(${groupId})/users?$select=Id,Email,LoginName`)).value;
+    const want = emails.map((e) => e.toLowerCase());
+    let added = 0;
+    let removed = 0;
+    for (const e of want) {
+      if (current.some((u) => (u.Email || '').toLowerCase() === e)) continue;
+      try {
+        // Members by their sign-in claim; guests by email (their sign-in name is not their email).
+        await this._sp.post(`web/sitegroups(${groupId})/users`, { LoginName: external ? e : `i:0#.f|membership|${e}` });
+        added++;
+      } catch (err) {
+        problems.push(`${e}: ${(err as Error).message}`);
+      }
+    }
+    for (const u of current) {
+      if (want.indexOf((u.Email || '').toLowerCase()) >= 0) continue;
+      try {
+        await this._sp.post(`web/sitegroups(${groupId})/users/removebyid(${u.Id})`);
+        removed++;
+      } catch (err) {
+        problems.push(`${u.Email || u.LoginName}: ${(err as Error).message}`);
+      }
+    }
+    return { added, removed, members: want.length };
+  }
+
+  /**
+   * Keep the BrillTS groups' members in step with the roles in the app (creates the groups when missing). Quick: it
+   * changes group membership only, not list permissions — used after roles change once security has been applied.
+   */
+  public async syncGroups(plan: ISecurityPlan, problems: string[] = []): Promise<IGroupSync[]> {
+    const out: IGroupSync[] = [];
+    const wanted: Record<SecurityGroupKey, string[]> = { admins: plan.admins, approvers: plan.approvers, externals: plan.externals };
+    for (const key of Object.keys(SECURITY_GROUPS) as SecurityGroupKey[]) {
+      const id = await this._group(key);
+      const r = await this._syncMembers(id, wanted[key], key === 'externals', problems);
+      out.push({ key, title: SECURITY_GROUPS[key].title, id, ...r });
+    }
+    return out;
+  }
+
   /**
    * Apply the permission model:
+   * - the BrillTS groups are created (when missing) and their members set from the roles in the app;
    * - every list gets its own permissions (copied from the site, so owners keep Full Control);
-   * - site groups that could edit are reduced to Read on configuration lists and to Contribute on timesheet lists;
-   * - "Everyone except external users" and each external user: Read on configuration, projects and people;
-   *   Contribute on timesheets (own rows only), notifications, tickets and saved reports;
-   * - managers / approvers: Edit on projects, tasks, people and every timesheet (they see all rows);
-   * - administrators: Edit on every list.
+   * - other site groups that could edit are reduced to Read on configuration lists and to Contribute on timesheet lists;
+   * - "Everyone except external users" and BrillTS External Users: Read on configuration, projects and people;
+   *   Contribute on timesheets (own rows only), tasks, notifications, tickets and saved reports;
+   * - BrillTS Approvers: Edit on projects, tasks, people and every timesheet (they see all rows);
+   * - BrillTS Administrators: Edit on every list.
    */
-  public async applySecurity(plan: ISecurityPlan, log: ProgressFn): Promise<string[]> {
+  public async applySecurity(plan: ISecurityPlan, log: ProgressFn): Promise<{ problems: string[]; groups: IGroupSync[] }> {
     const problems: string[] = [];
     const ids = await this._roleIds();
     const owners = await this._sp.get<{ Id: number }>('web/associatedownergroup?$select=Id').catch(() => ({ Id: -1 }));
-    const ensure = async (login: string): Promise<number | undefined> => {
+    const groups = await this.syncGroups(plan, problems);
+    groups.forEach((g) => log(`${g.title}: ${g.members} member${g.members === 1 ? '' : 's'}${g.added || g.removed ? ` (${g.added} added, ${g.removed} removed)` : ''}`, 'success'));
+    const gid = (k: SecurityGroupKey): number => groups.filter((g) => g.key === k)[0].id;
+    let everyone: number | undefined;
+    if (plan.tenantId) {
       try {
-        return await this._sp.ensureUser(login);
+        everyone = await this._sp.ensureUser(`c:0-.f|rolemanager|spo-grid-all-users/${plan.tenantId}`);
       } catch (e) {
-        problems.push(`${login}: ${(e as Error).message}`);
-        return undefined;
+        problems.push('Everyone except external users: ' + (e as Error).message);
       }
-    };
-    const everyone = plan.tenantId ? await ensure(`c:0-.f|rolemanager|spo-grid-all-users/${plan.tenantId}`) : undefined;
-    const toIds = async (list: string[]): Promise<number[]> => {
-      const out: number[] = [];
-      for (const e of list.filter((x, i, a) => !!x && a.map((y) => y.toLowerCase()).indexOf(x.toLowerCase()) === i)) {
-        const id = await ensure(e.indexOf('|') >= 0 ? e : `i:0#.f|membership|${e}`);
-        if (id) out.push(id);
-      }
-      return out;
-    };
-    const admins = await toIds(plan.admins);
-    const managers = (await toIds(plan.managers)).filter((m) => admins.indexOf(m) < 0);
-    const externals = (await toIds(plan.externals)).filter((m) => admins.indexOf(m) < 0 && managers.indexOf(m) < 0);
-
+    }
+    const ours = groups.map((g) => g.id);
     for (const def of LISTS) {
       const title = listTitle(this._prefix, def.key);
       const listPath = this._sp.list(title);
@@ -227,27 +282,26 @@ export class Provisioner {
         const state = await this._sp.get<{ HasUniqueRoleAssignments: boolean }>(`${listPath}?$select=HasUniqueRoleAssignments`);
         if (!state.HasUniqueRoleAssignments) await this._sp.post(`${listPath}/breakroleinheritance(copyRoleAssignments=true,clearSubscopes=true)`);
         const userRole = def.security === 'config' || def.security === 'managed' ? ids[READER] : ids[CONTRIBUTOR];
-        // Site groups (members…) that could edit get the users' role: Edit would let them see everyone's timesheets.
+        // Other site groups (members…) that could edit get the users' role: Edit would let them see everyone's timesheets.
         const assignments = (
           await this._sp.get<{ value: IRoleAssignment[] }>(`${listPath}/roleassignments?$expand=Member,RoleDefinitionBindings&$select=PrincipalId,Member/Id,Member/PrincipalType,RoleDefinitionBindings/Id,RoleDefinitionBindings/RoleTypeKind`)
         ).value;
         for (const a of assignments) {
-          if (a.PrincipalId === owners.Id) continue;
+          if (a.PrincipalId === owners.Id || ours.indexOf(a.PrincipalId) >= 0) continue;
           const kinds = a.RoleDefinitionBindings.map((r) => r.RoleTypeKind);
           if (kinds.indexOf(ADMINISTRATOR) >= 0) continue;
           if (kinds.some((k) => k === EDITOR || k === CONTRIBUTOR || k === 4 /* web designer */)) await this._grant(listPath, a.PrincipalId, userRole);
         }
         if (everyone) await this._grant(listPath, everyone, def.security === 'adminOnly' ? ids[CONTRIBUTOR] : userRole);
-        for (const x of externals) await this._grant(listPath, x, userRole);
-        const managerRole = def.security === 'config' || def.security === 'adminOnly' ? userRole : ids[EDITOR];
-        for (const m of managers) await this._grant(listPath, m, managerRole);
-        for (const a of admins) await this._grant(listPath, a, ids[EDITOR]);
+        await this._grant(listPath, gid('externals'), def.security === 'adminOnly' ? ids[CONTRIBUTOR] : userRole);
+        await this._grant(listPath, gid('approvers'), def.security === 'config' || def.security === 'adminOnly' ? userRole : ids[EDITOR]);
+        await this._grant(listPath, gid('admins'), ids[EDITOR]);
         log(`${title}: permissions applied`, 'success');
       } catch (e) {
         problems.push(`${title}: ${(e as Error).message}`);
         log(`${title}: ${(e as Error).message}`, 'error');
       }
     }
-    return problems;
+    return { problems, groups };
   }
 }

@@ -206,9 +206,20 @@ are costed at today's rates.
 
 ## 7. Security model
 
-*Apply security* (Admin › Schema & security) gives each list its own permissions:
+*Apply security* (Admin › Schema & security) creates three branded SharePoint groups, sets their members from the
+roles in the app, and gives each list its own permissions granted to those groups:
 
-| Lists | Everyone (and each external user) | Approvers and managers | Administrators |
+| SharePoint group | Members (kept in step automatically) |
+| --- | --- |
+| **BrillTS Administrators** | The Administrator role and the administrators listed in Admin › General (site owners already have full control) |
+| **BrillTS Approvers** | Programme, project and team managers, and anyone people report to |
+| **BrillTS External Users** | Active Microsoft 365 guests who track time (they are not in "Everyone except external users") |
+
+Each person is in one group only, the highest. After security has been applied, membership follows role changes on its
+own: saving a person, adding a guest or a group, setting programme managers or editing the administrators list updates
+the groups. Members can see who is in each group; only site owners change them by hand.
+
+| Lists | Everyone except external users, BrillTS External Users | BrillTS Approvers | BrillTS Administrators |
 | --- | --- | --- | --- |
 | Settings, Activities, Programmes | Read | Read | Edit |
 | Users, Projects | Read | Edit | Edit |
@@ -216,10 +227,9 @@ are costed at today's rates.
 | Tasks, Notifications, Tickets, Email queue, Saved reports | Contribute | Edit | Edit |
 | Audit log | Add, own rows only | Add, own rows only | Edit |
 
-Site groups that could edit are reduced to the users' level (Edit would let members read everyone's timesheets).
-Re-run it after adding approvers, administrators or external users. The app enforces the finer rules (who may approve
-what, which task fields members change). Like every SharePoint-list app, someone with direct list access can read what
-their permission allows through the REST API; the item-level security above is what keeps timesheets private.
+Other site groups that could edit are reduced to the users' level (Edit would let members read everyone's timesheets).
+Run Apply security again only if lists are added or someone changed permissions by hand. The app enforces the finer
+rules (who may approve what, which task fields members change).
 
 ## 8. Development
 
@@ -243,12 +253,13 @@ npm run preview
 - `npm test` — builds, then runs `tests/*.test.cjs` (node:test) against `lib-commonjs`: dates, hour rules, approvals and
   roles, rates, report engine, bulk import, licensing and plans, reminders, cloning, mappers, packages.
 - `npm run e2e` — end-to-end tests in Chromium against the compiled app and an in-memory SharePoint
-  (`tests/e2e/run.cjs`): 15 journeys where several people sign in and out within one session — first-run setup; an
+  (`tests/e2e/run.cjs`): 16 journeys where several people sign in and out within one session — first-run setup; an
   administrator building a project (form, task, bulk tasks and activities); a member submitting, the manager sending it
   back, the member correcting and the manager approving (rates captured, history, read-only); role-based auto approval;
   blocking hour limits; reports and Excel export matching the data; self-assigning; clone / save / submit / recall;
   reopening an approved week; the trial ending and a key being activated; the Standard ticket quota; notifications;
-  access by role and plan; phone width; Time off Manager 365 and Brillienta Task Manager. Then `tests/e2e/enterprise.cjs`
+  access by role and plan; phone width; Time off Manager 365 and Brillienta Task Manager; Apply security (BrillTS
+  groups, members from roles, list grants, automatic membership updates). Then `tests/e2e/enterprise.cjs`
   checks every Enterprise feature (58 checks). Failures leave screenshots in `tests/e2e/output/`;
   `node tests/e2e/run.cjs J03` runs one journey.
 - `npm run preview` — the real app against an in-memory SharePoint with a sample organisation:
