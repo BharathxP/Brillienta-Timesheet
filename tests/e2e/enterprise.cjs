@@ -138,11 +138,20 @@ async function open(p, query, route) {
   // ---- people: external users, per-person days, rates, programme manager
   await open(p, E, 'people');
   await p.click('button:has-text("Add external user")');
-  await p.fill('.ms-Dialog-main input >> nth=0', 'lena.weber@northwind.de');
-  await p.fill('.ms-Dialog-main input >> nth=1', 'Lena Weber (Northwind)');
+  await p.waitForSelector('.ms-Dialog-main input');
+  const fields = p.locator('.ms-Dialog-main input');
+  await fields.nth(0).fill('lena.weber@northwind.de');
+  await fields.nth(1).fill('Lena Weber (Northwind)');
+  // Under load the click can land before React has the typed values: confirm them first, then wait for the app's message.
+  await p.waitForFunction(() => Array.from(document.querySelectorAll('.ms-Dialog-main input')).map((i) => i.value).join('|') === 'lena.weber@northwind.de|Lena Weber (Northwind)');
   await p.click('.ms-Dialog-main button:has-text("Add")');
-  await p.waitForSelector('.ms-Dialog-main', { state: 'detached', timeout: 10000 });
-  await p.waitForTimeout(800);
+  await p.locator('.ts-toasts').getByText(/Person added|Invitation sent/).first().waitFor({ timeout: 20000 }).catch(async (e) => {
+    await p.screenshot({ path: `${OUT}/external-user-failure.png` });
+    console.log('no confirmation; toasts:', (await p.$$eval('.ts-toasts', (t) => t.map((x) => x.innerText))).join(' | '));
+    throw e;
+  });
+  await p.waitForSelector('.ms-Dialog-main', { state: 'detached', timeout: 20000 });
+  await p.waitForTimeout(500);
   check('Add Office 365 external users', (await lists(p, () => (window.__tsLists().BrillTS_Users.items.filter((x) => x.Email === 'lena.weber@northwind.de')[0] || {}).IsExternal)) === true);
   await p.click('td:has-text("Rahul Sharma")');
   await p.waitForSelector('.ms-Panel-main');

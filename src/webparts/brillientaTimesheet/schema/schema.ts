@@ -7,13 +7,12 @@
 // People are stored by email (text), not as Person columns, so Microsoft 365 guests (external users) work the same as
 // members and the data reads cleanly in Power BI, Power Automate and the REST API.
 
-// 2: Brillienta Task Manager links (Projects.TmProjectId, Tasks.TmTaskId, TimeEntries.TmSync).
-export const SCHEMA_VERSION = 2;
+// 1: first release.
+export const SCHEMA_VERSION = 1;
 
 /**
  * Every list is named <prefix><suffix>, e.g. BrillTS_TimeEntries: the Brillienta brand, unmistakable in Site contents,
- * search, Power Automate and Power BI, and distinct from other apps' lists. A web part placed before the prefix changed
- * keeps the prefix saved in its properties, so its lists keep working.
+ * search, Power Automate and Power BI, and distinct from other apps' lists.
  */
 export const LIST_PREFIX = 'BrillTS_';
 

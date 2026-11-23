@@ -13,8 +13,6 @@ import { LIST_PREFIX, listTitle } from './schema/schema';
 import { TENANT_SITE_KEY, normalizeSiteUrl, sameSite } from './services/host';
 
 export interface IBrillientaTimesheetWebPartProps {
-  /** Set to LIST_PREFIX ("BrillTS_") by the manifest: the Settings list itself is found through it. */
-  listPrefix: string;
   /** Site that holds the timesheet lists when it is not the site the web part runs on (Teams tabs). */
   siteUrl?: string;
 }
@@ -85,9 +83,9 @@ export default class BrillientaTimesheetWebPart extends BaseClientSideWebPart<IB
     ReactDom.render(React.createElement(App, props), this.domElement);
   }
 
+  /** Every list is named LIST_PREFIX + its name (BrillTS_Settings, BrillTS_TimeEntries…). */
   private _prefix(): string {
-    const p = (this.properties.listPrefix || LIST_PREFIX).replace(/[^A-Za-z0-9_]/g, '');
-    return p || LIST_PREFIX;
+    return LIST_PREFIX;
   }
 
   private _origin(): string {
