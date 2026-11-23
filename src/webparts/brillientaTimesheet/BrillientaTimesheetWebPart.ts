@@ -9,11 +9,11 @@ import { initializeIcons } from '@fluentui/react';
 
 import * as strings from 'BrillientaTimesheetWebPartStrings';
 import App, { IAppProps } from './components/App';
-import { listTitle } from './schema/schema';
+import { LIST_PREFIX, listTitle } from './schema/schema';
 import { TENANT_SITE_KEY, normalizeSiteUrl, sameSite } from './services/host';
 
 export interface IBrillientaTimesheetWebPartProps {
-  /** Fixed at "TS_" by the manifest: the Settings list itself is found through it. */
+  /** Set to LIST_PREFIX ("BrillTS_") by the manifest: the Settings list itself is found through it. */
   listPrefix: string;
   /** Site that holds the timesheet lists when it is not the site the web part runs on (Teams tabs). */
   siteUrl?: string;
@@ -86,8 +86,8 @@ export default class BrillientaTimesheetWebPart extends BaseClientSideWebPart<IB
   }
 
   private _prefix(): string {
-    const p = (this.properties.listPrefix || 'TS_').replace(/[^A-Za-z0-9_]/g, '');
-    return p || 'TS_';
+    const p = (this.properties.listPrefix || LIST_PREFIX).replace(/[^A-Za-z0-9_]/g, '');
+    return p || LIST_PREFIX;
   }
 
   private _origin(): string {

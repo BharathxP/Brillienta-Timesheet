@@ -32,7 +32,7 @@ See also: [Enterprise feature checklist](docs/ENTERPRISE-CHECKLIST.md).
 | Feature | Plan | Where | How it works |
 | --- | --- | --- | --- |
 | Weekly timesheets with approvals | Standard | My timesheet | Grid of project · task · activity lines with hours per day, notes per day, save draft (Ctrl+S), submit with a comment, recall. Hours accept `7.5`, `7,5`, `7:30`, `7h30`, `45m`, snapped to the configured step. |
-| 4 support tickets per annum | Standard | Support | Tickets are saved in `TS_SupportTickets` and emailed to Brillienta; the Standard plan counts them per calendar year and stops at 4. |
+| 4 support tickets per annum | Standard | Support | Tickets are saved in `BrillTS_SupportTickets` and emailed to Brillienta; the Standard plan counts them per calendar year and stops at 4. |
 | Clone weekly timesheets | Standard | My timesheet › Clone a week | Copies the lines (optionally the hours, same weekdays) of last week or any earlier week; closed projects, time off and holidays are skipped; add to or replace the current lines. |
 | Detailed project report | Standard | Project › Detailed report; Reports › Project report | Hours, billable / non-billable, cost and billable amount by person, task, activity, week, month; chart, table and Excel export (summary + day-level details). |
 | Billable / non-billable tracking | Standard | Every line; Reports › Billable | Default from project → task → activity; people may override when allowed (Admin › Week & tracking). |
@@ -148,25 +148,25 @@ ever added).
 
 ## 5. Data model
 
-All lists are hidden from Site contents and prefixed `TS_`. People are stored by email so guests work the same way and
+All lists are hidden from Site contents and prefixed `BrillTS_`. People are stored by email so guests work the same way and
 the data reads cleanly in Power BI. Defined in `schema/schema.ts` (schema-as-code, checked and repaired by
 `services/Provisioner.ts`).
 
 | List | One row per | Key columns |
 | --- | --- | --- |
-| TS_Settings | setting | Config (JSON), InstalledAt, LicenseKey, SchemaVersion, ReminderLog |
-| TS_Users | person | Email, UserRole, ManagerEmail, Department, CostRate, BillRate, IsExternal, IsActive, HourRuleId, WorkDays |
-| TS_Programs | programme | ManagerEmails |
-| TS_Projects | project | TmProjectId, ProjectCode, Client, ProgramId, ManagerEmails, MemberEmails, IsBillable, ProjectStatus, StartDate, EndDate, PlannedHours, HourlyCost, BillRate, MemberRates, CustomValues |
-| TS_Tasks | task | TmTaskId, ProjectId, AssigneeEmails, TaskStatus, PlannedHours, DueDate, SelfAssign, PlannerTaskId |
-| TS_Activities | activity | IsBillable, IsActive, IsTimeOff |
-| TS_Timesheets | person × week | UserEmail, WeekStart (yyyy-mm-dd), SheetStatus, TotalHours, BillableHours, SubmittedAt, DecidedBy, AutoApproved, Comments |
-| TS_TimeEntries | timesheet line | SheetId, UserEmail, WeekStart, ProjectId, TaskId, ActivityId, IsBillable, DayHours (JSON date → hours), DayNotes, TotalHours, CustomValues, CostRate / BillRate (captured at submit), TmSync (what was sent to / imported from Task Manager) |
-| TS_SupportTickets | ticket | Category, Priority, TicketStatus |
-| TS_Notifications | bell notification | Recipient, IsRead, LinkPath |
-| TS_EmailQueue | queued email | MailTo, MailBody, MailStatus (sent by the flow) |
-| TS_AuditLog | change | Details, ByName |
-| TS_SavedReports | report / dashboard | OwnerEmail, IsShared, Definition (JSON) |
+| BrillTS_Settings | setting | Config (JSON), InstalledAt, LicenseKey, SchemaVersion, ReminderLog |
+| BrillTS_Users | person | Email, UserRole, ManagerEmail, Department, CostRate, BillRate, IsExternal, IsActive, HourRuleId, WorkDays |
+| BrillTS_Programs | programme | ManagerEmails |
+| BrillTS_Projects | project | TmProjectId, ProjectCode, Client, ProgramId, ManagerEmails, MemberEmails, IsBillable, ProjectStatus, StartDate, EndDate, PlannedHours, HourlyCost, BillRate, MemberRates, CustomValues |
+| BrillTS_Tasks | task | TmTaskId, ProjectId, AssigneeEmails, TaskStatus, PlannedHours, DueDate, SelfAssign, PlannerTaskId |
+| BrillTS_Activities | activity | IsBillable, IsActive, IsTimeOff |
+| BrillTS_Timesheets | person × week | UserEmail, WeekStart (yyyy-mm-dd), SheetStatus, TotalHours, BillableHours, SubmittedAt, DecidedBy, AutoApproved, Comments |
+| BrillTS_TimeEntries | timesheet line | SheetId, UserEmail, WeekStart, ProjectId, TaskId, ActivityId, IsBillable, DayHours (JSON date → hours), DayNotes, TotalHours, CustomValues, CostRate / BillRate (captured at submit), TmSync (what was sent to / imported from Task Manager) |
+| BrillTS_SupportTickets | ticket | Category, Priority, TicketStatus |
+| BrillTS_Notifications | bell notification | Recipient, IsRead, LinkPath |
+| BrillTS_EmailQueue | queued email | MailTo, MailBody, MailStatus (sent by the flow) |
+| BrillTS_AuditLog | change | Details, ByName |
+| BrillTS_SavedReports | report / dashboard | OwnerEmail, IsShared, Definition (JSON) |
 
 Rates are captured on each line when a week is submitted, so later rate changes never rewrite approved history; drafts
 are costed at today's rates.
@@ -194,12 +194,12 @@ are costed at today's rates.
   approver, the admin whose browser runs reminders). Teams messages go to a one-to-one chat with that person.
 - **Reminders and project notices** run in an administrator's browser when they open the app (at most hourly, one
   browser at a time); Admin › Notifications › *Send due reminders now* runs them on demand. For fully unattended
-  sending, add a scheduled Power Automate flow on the lists (e.g. every Monday: people in `TS_Users` with no
-  `Submitted`/`Approved` row in `TS_Timesheets` for last week → send an email).
+  sending, add a scheduled Power Automate flow on the lists (e.g. every Monday: people in `BrillTS_Users` with no
+  `Submitted`/`Approved` row in `BrillTS_Timesheets` for last week → send an email).
 - **Planner** — Project › Tasks › Import from Planner.
 - **Copilot** — download the agent package; upload it in Teams admin center. Copilot only sees what each person can see.
 - **Power Automate** — HTTP trigger URL and events in Admin › Integrations; payload: `{ event, at, org, data }`.
-- **API** — SharePoint REST `…/_api/web/lists/getbytitle('TS_TimeEntries')/items` or Graph
+- **API** — SharePoint REST `…/_api/web/lists/getbytitle('BrillTS_TimeEntries')/items` or Graph
   `/sites/{site-id}/lists/{list}/items?expand=fields`, with an Entra app registration (Sites.Selected recommended).
 - **Power BI** — `.pbids` file; relate TimeEntries.ProjectId → Projects.ID, TaskId → Tasks.ID, ActivityId →
   Activities.ID, SheetId → Timesheets.ID, UserEmail → Users.Email; expand DayHours (JSON) to one row per day.

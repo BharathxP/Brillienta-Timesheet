@@ -10,6 +10,13 @@
 // 2: Brillienta Task Manager links (Projects.TmProjectId, Tasks.TmTaskId, TimeEntries.TmSync).
 export const SCHEMA_VERSION = 2;
 
+/**
+ * Every list is named <prefix><suffix>, e.g. BrillTS_TimeEntries: the Brillienta brand, unmistakable in Site contents,
+ * search, Power Automate and Power BI, and distinct from other apps' lists. A web part placed before the prefix changed
+ * keeps the prefix saved in its properties, so its lists keep working.
+ */
+export const LIST_PREFIX = 'BrillTS_';
+
 export type FieldType = 'Text' | 'Note' | 'Number' | 'Boolean' | 'DateTime' | 'DateOnly' | 'Choice';
 
 export interface IFieldDef {

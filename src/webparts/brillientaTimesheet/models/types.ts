@@ -32,7 +32,7 @@ export interface ICurrentUser {
   isExternal: boolean;
 }
 
-/** A person who tracks time (TS_Users). */
+/** A person who tracks time (BrillTS_Users). */
 export interface ITsUser {
   id: number;
   name: string;
@@ -132,7 +132,7 @@ export interface ISheetComment {
   action?: 'submitted' | 'approved' | 'rejected' | 'reopened' | 'auto-approved' | 'comment';
 }
 
-/** One person's week (TS_Timesheets). The hours themselves are on the entries. */
+/** One person's week (BrillTS_Timesheets). The hours themselves are on the entries. */
 export interface ITimesheet {
   id: number;
   userEmail: string;
@@ -149,7 +149,7 @@ export interface ITimesheet {
   modified?: string;
 }
 
-/** One line of a week: a project / task / activity with hours per day (TS_TimeEntries). */
+/** One line of a week: a project / task / activity with hours per day (BrillTS_TimeEntries). */
 export interface ITimeEntry {
   id: number;
   sheetId: number;

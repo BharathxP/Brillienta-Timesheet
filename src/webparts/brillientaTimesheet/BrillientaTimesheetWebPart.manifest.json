@@ -16,7 +16,7 @@
       "title": { "default": "Brillienta Timesheet" },
       "description": { "default": "Weekly timesheets, projects, approvals, billable hours and cost reports." },
       "officeFabricIconFontName": "Clock",
-      "properties": { "listPrefix": "TS_" }
+      "properties": { "listPrefix": "BrillTS_" }
     }
   ]
 }

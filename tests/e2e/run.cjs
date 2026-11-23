@@ -93,7 +93,7 @@ const h = (page) => ({
     return page.locator('.ts-weekbar .ts-status').first().textContent();
   },
   sheetOf(email) {
-    return page.evaluate((e) => window.__tsLists().TS_Timesheets.items.filter((x) => x.UserEmail === e).sort((a, b) => b.WeekStart.localeCompare(a.WeekStart))[0], email);
+    return page.evaluate((e) => window.__tsLists().BrillTS_Timesheets.items.filter((x) => x.UserEmail === e).sort((a, b) => b.WeekStart.localeCompare(a.WeekStart))[0], email);
   }
 });
 
@@ -138,10 +138,10 @@ async function main() {
     await t.click('Create the timesheet');
     await page.waitForSelector('.ts-nav', { timeout: 30000 });
     await page.waitForTimeout(1500);
-    const lists = await t.lists(() => Object.keys(window.__tsLists()).filter((k) => k.indexOf('TS_') === 0));
+    const lists = await t.lists(() => Object.keys(window.__tsLists()).filter((k) => k.indexOf('BrillTS_') === 0));
     expect(lists.length >= 13, `only ${lists.length} lists created`);
     log(`${lists.length} lists created`);
-    const counts = await t.lists(() => ({ a: window.__tsLists().TS_Activities.items.length, u: window.__tsLists().TS_Users.items.map((x) => x.UserRole + ':' + x.Email), p: window.__tsLists().TS_Projects.items.length, t: window.__tsLists().TS_Tasks.items.length }));
+    const counts = await t.lists(() => ({ a: window.__tsLists().BrillTS_Activities.items.length, u: window.__tsLists().BrillTS_Users.items.map((x) => x.UserRole + ':' + x.Email), p: window.__tsLists().BrillTS_Projects.items.length, t: window.__tsLists().BrillTS_Tasks.items.length }));
     expect(counts.a === 9 && counts.p === 2 && counts.t === 4, JSON.stringify(counts));
     expect(counts.u.length === 1 && /^admin:/.test(counts.u[0]), 'installer not added as administrator');
     log('9 activities, 2 sample projects, 4 tasks; the installer is an administrator');
@@ -169,7 +169,7 @@ async function main() {
     await t.click('Save project', '.ms-Panel-main');
     await page.waitForSelector('text=Linked to Task Manager >> nth=0', { timeout: 1500 }).catch(() => undefined);
     await page.waitForSelector('h1:has-text("ERP rollout")', { timeout: 10000 });
-    const p = await t.lists(() => window.__tsLists().TS_Projects.items.filter((x) => x.Title === 'ERP rollout')[0]);
+    const p = await t.lists(() => window.__tsLists().BrillTS_Projects.items.filter((x) => x.Title === 'ERP rollout')[0]);
     expect(p && p.ProjectCode === 'ERP-07' && p.PlannedHours === 600 && p.HourlyCost === 1500 && /rahul/.test(p.MemberEmails) && /sara/.test(p.MemberEmails) && /PO-9001/.test(p.CustomValues), JSON.stringify(p));
     log('project created with code, client, members, planned hours, cost, rate and a custom column');
     await page.locator('button[role="tab"]:has-text("Tasks")').click();
@@ -182,9 +182,9 @@ async function main() {
     await page.locator('.ms-Panel-main').getByLabel('Planned hours').fill('120');
     await t.click('Save', '.ms-Panel-main');
     await page.waitForTimeout(1500);
-    const task = await t.lists(() => window.__tsLists().TS_Tasks.items.filter((x) => x.Title === 'Data migration')[0]);
+    const task = await t.lists(() => window.__tsLists().BrillTS_Tasks.items.filter((x) => x.Title === 'Data migration')[0]);
     expect(task && /rahul/.test(task.AssigneeEmails), 'task not created / not assigned');
-    const note = await t.lists(() => window.__tsLists().TS_Notifications.items.filter((x) => x.Kind === 'taskAssigned' && x.Recipient === 'rahul.sharma@contoso.com').length);
+    const note = await t.lists(() => window.__tsLists().BrillTS_Notifications.items.filter((x) => x.Kind === 'taskAssigned' && x.Recipient === 'rahul.sharma@contoso.com').length);
     expect(note === 1, 'assignee not notified');
     log('task created, assigned to Rahul, Rahul notified');
     await t.click('Bulk create tasks');
@@ -194,7 +194,7 @@ async function main() {
     log('bulk paste validated: 2 of 3 rows ready (unknown project rejected)');
     await t.dialogButton('Create 2 tasks');
     await page.waitForTimeout(1500);
-    const tasks = await t.lists(() => window.__tsLists().TS_Tasks.items.filter((x) => ['User training', 'Cut-over'].indexOf(x.Title) >= 0).length);
+    const tasks = await t.lists(() => window.__tsLists().BrillTS_Tasks.items.filter((x) => ['User training', 'Cut-over'].indexOf(x.Title) >= 0).length);
     expect(tasks === 2, `bulk tasks: ${tasks}`);
     log('2 tasks created in bulk');
     await t.go('activities');
@@ -203,7 +203,7 @@ async function main() {
     await page.waitForTimeout(300);
     await t.dialogButton('Create 2 activities');
     await page.waitForTimeout(1500);
-    expect((await t.lists(() => window.__tsLists().TS_Activities.items.filter((x) => x.Title === 'Travel' && x.IsBillable === false).length)) === 1, 'bulk activities');
+    expect((await t.lists(() => window.__tsLists().BrillTS_Activities.items.filter((x) => x.Title === 'Travel' && x.IsBillable === false).length)) === 1, 'bulk activities');
     log('activities created in bulk (Travel non-billable)');
   });
 
@@ -231,7 +231,7 @@ async function main() {
     await t.toast(/Submitted for approval/);
     let s = await t.sheetOf(MEMBER);
     expect(s.SheetStatus === 'Submitted' && s.TotalHours === 41, JSON.stringify(s));
-    const approvers = await t.lists((id) => window.__tsLists().TS_Notifications.items.filter((x) => x.Kind === 'sheetSubmitted' && x.Created > id).map((x) => x.Recipient), '');
+    const approvers = await t.lists((id) => window.__tsLists().BrillTS_Notifications.items.filter((x) => x.Kind === 'sheetSubmitted' && x.Created > id).map((x) => x.Recipient), '');
     expect(approvers.indexOf('meera.iyer@contoso.com') >= 0 && approvers.indexOf('arjun.mehta@contoso.com') >= 0, 'approvers: ' + approvers);
     log('41 h submitted with a note and a comment; manager and project manager notified');
     expect(await page.isVisible('button:has-text("Recall")'), 'recall offered');
@@ -267,7 +267,7 @@ async function main() {
     await t.toast(/approved/);
     s = await t.sheetOf(MEMBER);
     expect(s.SheetStatus === 'Approved', s.SheetStatus);
-    const rates = await t.lists((sid) => window.__tsLists().TS_TimeEntries.items.filter((x) => x.SheetId === sid).map((x) => x.CostRate + '/' + x.BillRate), s.Id);
+    const rates = await t.lists((sid) => window.__tsLists().BrillTS_TimeEntries.items.filter((x) => x.SheetId === sid).map((x) => x.CostRate + '/' + x.BillRate), s.Id);
     expect(rates.length && rates.every((r) => r === '1400/2800'), 'rates captured: ' + rates);
     log('manager approved; Rahul’s cost 1400 and bill rate 2800 captured on the lines');
     await t.signIn('member', 'timesheet');
@@ -319,7 +319,7 @@ async function main() {
     await page.waitForTimeout(1500);
     const hoursText = await page.locator('.ts-kpi').filter({ has: page.locator('.ts-kpi-label', { hasText: /^Hours$/ }) }).locator('.ts-kpi-value').first().textContent();
     const hours = Number(hoursText.replace(/[^\d.]/g, ''));
-    const facts = await t.lists(() => window.__tsLists().TS_TimeEntries.items.reduce((s, e) => s + Object.values(JSON.parse(e.DayHours || '{}')).reduce((a, b) => a + b, 0), 0));
+    const facts = await t.lists(() => window.__tsLists().BrillTS_TimeEntries.items.reduce((s, e) => s + Object.values(JSON.parse(e.DayHours || '{}')).reduce((a, b) => a + b, 0), 0));
     expect(hours > 0 && Math.abs(hours - facts) < 0.01, `report ${hours} h vs data ${facts} h`);
     log(`project report total ${hours} h matches the timesheet data`);
     await page.locator('button[role="tab"]:has-text("Cost & margin")').click();
@@ -341,7 +341,7 @@ async function main() {
     await page.locator('button[role="tab"]:has-text("Open to take")').click();
     await page.locator('tr:has-text("Accessibility review") button:has-text("Assign to me")').click();
     await t.toast(/is now yours/);
-    expect(/rahul/.test(await t.lists(() => window.__tsLists().TS_Tasks.items.filter((x) => x.Title === 'Accessibility review')[0].AssigneeEmails)), 'not assigned');
+    expect(/rahul/.test(await t.lists(() => window.__tsLists().BrillTS_Tasks.items.filter((x) => x.Title === 'Accessibility review')[0].AssigneeEmails)), 'not assigned');
     log('task assigned to the member');
     await t.go('timesheet');
     await t.pick('Project', 'Website redesign');
@@ -416,7 +416,7 @@ async function main() {
     }
     expect(await page.locator('button:has-text("Send ticket")').isDisabled(), 'fifth ticket allowed');
     expect(await page.isVisible('text=(0 left in'), 'quota text');
-    const queued = await t.lists(() => window.__tsLists().TS_EmailQueue.items.filter((x) => /support@brillienta.com/.test(x.MailTo)).length);
+    const queued = await t.lists(() => window.__tsLists().BrillTS_EmailQueue.items.filter((x) => /support@brillienta.com/.test(x.MailTo)).length);
     expect(queued === 4, 'tickets emailed: ' + queued);
     log('4 tickets sent to Brillienta support; the 5th is blocked');
   });
@@ -468,7 +468,7 @@ async function main() {
     log('approved leave filled Wed–Fri (8 h), not the weekend; the rejected request ignored');
     await t.open('role=admin&tm=1', 'projects');
     await t.toast(/Task Manager:/, 15000);
-    expect((await t.lists(() => window.__tsLists().TS_Projects.items.filter((x) => x.TmProjectId > 0).length)) === 2, 'projects not synced');
+    expect((await t.lists(() => window.__tsLists().BrillTS_Projects.items.filter((x) => x.TmProjectId > 0).length)) === 2, 'projects not synced');
     log('Task Manager projects and tasks synced on open');
     await t.signIn('member', 'timesheet');
     await t.click('Import from Task Manager');

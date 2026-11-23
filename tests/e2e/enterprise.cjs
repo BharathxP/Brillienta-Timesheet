@@ -59,19 +59,22 @@ async function open(p, query, route) {
 
   // ---- reminders + project end notices + planned hours (Pro / Enterprise)
   await open(p, E, 'admin/notifications');
-  const before = await lists(p, () => window.__tsLists().TS_Notifications.items.length);
+  const before = await lists(p, () => window.__tsLists().BrillTS_Notifications.items.length);
+  // Reminders go out from the configured hour; set it to 0:00 so the check does not depend on the time of day.
+  await p.locator('.ms-Dropdown-container').filter({ has: p.locator('label', { hasText: /^From$/ }) }).locator('.ms-Dropdown').click();
+  await p.locator('button[role="option"]').filter({ hasText: /^0:00$/ }).click();
   await p.click('button:has-text("Send due reminders now")');
   await p.waitForSelector('text=/reminders and .* project notices sent/', { timeout: 10000 });
-  const kinds = await lists(p, () => window.__tsLists().TS_Notifications.items.map((x) => x.Kind));
+  const kinds = await lists(p, () => window.__tsLists().BrillTS_Notifications.items.map((x) => x.Kind));
   const reminders = kinds.filter((k) => k === 'reminder').length;
   const ending = kinds.filter((k) => k === 'projectEnding' || k === 'projectEnded').length;
   check('Pending weekly timesheet reminders sent', reminders > 0, `${reminders} reminders (bell + email)`);
   check('Project end date notifications sent', ending > 0, `${ending} notices (Website redesign ends in 6 days)`);
-  check('Emails queued or sent for them', (await lists(p, () => (window.__tsLists().TS_EmailQueue || { items: [] }).items.length)) > 0 || before >= 0, 'queued for the Power Automate flow (Outlook via Graph is not available in the preview)');
-  const again = await lists(p, () => window.__tsLists().TS_Notifications.items.length);
+  check('Emails queued or sent for them', (await lists(p, () => (window.__tsLists().BrillTS_EmailQueue || { items: [] }).items.length)) > 0 || before >= 0, 'queued for the Power Automate flow (Outlook via Graph is not available in the preview)');
+  const again = await lists(p, () => window.__tsLists().BrillTS_Notifications.items.length);
   await p.click('button:has-text("Send due reminders now")');
   await p.waitForTimeout(2500);
-  check('Reminders go out once per person and week', (await lists(p, () => window.__tsLists().TS_Notifications.items.length)) === again);
+  check('Reminders go out once per person and week', (await lists(p, () => window.__tsLists().BrillTS_Notifications.items.length)) === again);
 
   // ---- email templates
   const srcdoc = await p.getAttribute('iframe.ts-tpl-preview', 'srcdoc');
@@ -109,7 +112,7 @@ async function open(p, query, route) {
   const [flow] = await Promise.all([p.waitForEvent('download', { timeout: 10000 }), p.click('button:has-text("Download the email flow")')]);
   const flowPath = `${OUT}/${flow.suggestedFilename()}`;
   await flow.saveAs(flowPath);
-  check('Power Automate email flow package', zipHas(fs.readFileSync(flowPath), 'TS_EmailQueue'), flow.suggestedFilename());
+  check('Power Automate email flow package', zipHas(fs.readFileSync(flowPath), 'BrillTS_EmailQueue'), flow.suggestedFilename());
 
   // ---- projects: planned hours, end dates, disable, delete, bulk
   await open(p, E, 'projects');
@@ -119,7 +122,7 @@ async function open(p, query, route) {
   await p.click(`${row} button:has-text("Manage")`);
   await p.click('button[role="menuitem"]:has-text("Disable (no new time)")');
   await p.waitForTimeout(1200);
-  check('Disable projects', (await lists(p, () => window.__tsLists().TS_Projects.items.filter((x) => x.Title === 'Data platform')[0].ProjectStatus)) === 'Disabled');
+  check('Disable projects', (await lists(p, () => window.__tsLists().BrillTS_Projects.items.filter((x) => x.Title === 'Data platform')[0].ProjectStatus)) === 'Disabled');
   await p.click('.ms-Dropdown:has-text("Active")');
   await p.click('button[role="option"]:has-text("All statuses")');
   await p.waitForTimeout(400);
@@ -127,7 +130,7 @@ async function open(p, query, route) {
   await p.click('button[role="menuitem"]:has-text("Delete")');
   await p.click('.ms-Dialog-main button:has-text("Delete")');
   await p.waitForTimeout(1500);
-  check('Delete projects', (await lists(p, () => window.__tsLists().TS_Projects.items.filter((x) => x.Title === 'Legacy CRM support').length)) === 0);
+  check('Delete projects', (await lists(p, () => window.__tsLists().BrillTS_Projects.items.filter((x) => x.Title === 'Legacy CRM support').length)) === 0);
   await p.click('button:has-text("New project")');
   check('Project end date and planned hours in the project editor', (await p.isVisible('text=End date')) && (await p.isVisible('text=Planned hours')) && !(await p.isVisible('.ms-Panel-main >> text=Available on the Enterprise plan')));
   await p.keyboard.press('Escape');
@@ -140,14 +143,14 @@ async function open(p, query, route) {
   await p.click('.ms-Dialog-main button:has-text("Add")');
   await p.waitForSelector('.ms-Dialog-main', { state: 'detached', timeout: 10000 });
   await p.waitForTimeout(800);
-  check('Add Office 365 external users', (await lists(p, () => (window.__tsLists().TS_Users.items.filter((x) => x.Email === 'lena.weber@northwind.de')[0] || {}).IsExternal)) === true);
+  check('Add Office 365 external users', (await lists(p, () => (window.__tsLists().BrillTS_Users.items.filter((x) => x.Email === 'lena.weber@northwind.de')[0] || {}).IsExternal)) === true);
   await p.click('td:has-text("Rahul Sharma")');
   await p.waitForSelector('.ms-Panel-main');
   check('User-specific rates and hourly cost on a person', (await p.isVisible('.ms-Panel-main >> text=/Hourly cost/')) && (await p.isVisible('.ms-Panel-main >> text=/Bill rate/')));
   await p.click('.ms-Panel-main .ms-Checkbox:has-text("Sat") label');
   await p.click('.ms-Panel-main button:has-text("Save")');
   await p.waitForTimeout(1200);
-  check('Select days for time tracking per person', (await lists(p, () => window.__tsLists().TS_Users.items.filter((x) => x.Email === 'rahul.sharma@contoso.com')[0].WorkDays)) === '1,2,3,4,5,6');
+  check('Select days for time tracking per person', (await lists(p, () => window.__tsLists().BrillTS_Users.items.filter((x) => x.Email === 'rahul.sharma@contoso.com')[0].WorkDays)) === '1,2,3,4,5,6');
 
   // ---- custom reports & dashboards
   await open(p, E, 'reports');
@@ -155,7 +158,7 @@ async function open(p, query, route) {
   await p.fill('.ts-split input >> nth=-1', 'Hours by client and month');
   await p.click('button:has-text("Save report")');
   await p.waitForTimeout(1200);
-  check('Custom reports: saved', (await lists(p, () => window.__tsLists().TS_SavedReports.items.filter((x) => x.ReportKind === 'report').length)) === 1);
+  check('Custom reports: saved', (await lists(p, () => window.__tsLists().BrillTS_SavedReports.items.filter((x) => x.ReportKind === 'report').length)) === 1);
   for (const t of ['Project report', 'My team', 'Billable / non-billable', 'Cost & margin', 'Utilisation']) {
     await p.click(`button[role="tab"]:has-text("${t}")`);
     await p.waitForTimeout(400);
@@ -166,7 +169,7 @@ async function open(p, query, route) {
   await p.click('button:has-text("Save as my dashboard")');
   await p.click('.ms-Panel-main button:has-text("Save dashboard")');
   await p.waitForTimeout(1200);
-  check('Custom dashboards: saved', (await lists(p, () => window.__tsLists().TS_SavedReports.items.filter((x) => x.ReportKind === 'dashboard').length)) === 1);
+  check('Custom dashboards: saved', (await lists(p, () => window.__tsLists().BrillTS_SavedReports.items.filter((x) => x.ReportKind === 'dashboard').length)) === 1);
 
   // ---- support + account manager
   await open(p, E, 'support');

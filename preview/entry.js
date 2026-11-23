@@ -45,7 +45,7 @@ function render() {
       user: { displayName: me.name, email: me.email, loginName: user.LoginName },
       permissions: { manageLists: currentRole === 'admin', manageWeb: currentRole === 'admin' },
       tenantId: '6f1c2a9e-0b7d-4c55-9e3a-2d8f41b07c13',
-      prefix: 'TS_',
+      prefix: 'BrillTS_',
       appVersion: APP_VERSION + '.0',
       isEditMode: false
     }),
@@ -115,7 +115,7 @@ async function main() {
   cfg.holidays = [{ date: addDays(weekStartOf(today(), 1), 14 + 2), name: 'Company day' }];
   const installedAt = params.get('installed') ? new Date(Date.now() - Number(params.get('installed')) * 86400000).toISOString() : new Date(Date.now() - 3 * 86400000).toISOString();
   seed(
-    'TS_Settings',
+    'BrillTS_Settings',
     [
       { Title: 'SchemaVersion', SettingValue: String(SCHEMA_VERSION) },
       { Title: 'AppVersion', SettingValue: APP_VERSION + '.0' },
@@ -126,10 +126,10 @@ async function main() {
     ],
     author
   );
-  seed('TS_Users', PEOPLE.map((p) => ({ Title: p.name, Email: p.email, UserRole: p.role, ManagerEmail: p.manager, Department: p.dept, JobTitle: p.title, CostRate: p.cost, BillRate: p.bill, IsExternal: !!p.external, IsActive: true, Created: '2026-01-05T09:00:00Z' })), author);
-  seed('TS_Programs', [{ Title: 'Digital transformation', Details: 'Client-facing digital programmes.', ManagerEmails: 'vikram.rao@contoso.com', ColorHex: '#8a5cd1' }], author);
+  seed('BrillTS_Users', PEOPLE.map((p) => ({ Title: p.name, Email: p.email, UserRole: p.role, ManagerEmail: p.manager, Department: p.dept, JobTitle: p.title, CostRate: p.cost, BillRate: p.bill, IsExternal: !!p.external, IsActive: true, Created: '2026-01-05T09:00:00Z' })), author);
+  seed('BrillTS_Programs', [{ Title: 'Digital transformation', Details: 'Client-facing digital programmes.', ManagerEmails: 'vikram.rao@contoso.com', ColorHex: '#8a5cd1' }], author);
   const t = today();
-  const prog = fakeLists().TS_Programs.items[0].Id;
+  const prog = fakeLists().BrillTS_Programs.items[0].Id;
   const P = [
     { Title: 'Website redesign', ProjectCode: 'WEB-01', Client: 'Contoso Retail', ProgramId: prog, ManagerEmails: 'arjun.mehta@contoso.com', IsBillable: true, ProjectStatus: 'Active', StartDate: addDays(t, -60), EndDate: addDays(t, 6), PlannedHours: 420, HourlyCost: 1500, BillRate: 3000, ColorHex: '#2a78d6', CustomValues: JSON.stringify({ po: 'PO-7781' }) },
     { Title: 'Mobile app', ProjectCode: 'APP-02', Client: 'Fabrikam', ProgramId: prog, ManagerEmails: 'arjun.mehta@contoso.com', IsBillable: true, ProjectStatus: 'Active', StartDate: addDays(t, -30), EndDate: addDays(t, 120), PlannedHours: 900, HourlyCost: 1500, BillRate: 3200, ColorHex: '#1baf7a' },
@@ -137,10 +137,10 @@ async function main() {
     { Title: 'Internal', ProjectCode: 'INT', Client: '', ProgramId: 0, ManagerEmails: 'priya.nair@contoso.com', IsBillable: false, ProjectStatus: 'Active', StartDate: '', EndDate: '', PlannedHours: 0, HourlyCost: 0, BillRate: 0, ColorHex: '#17232e' },
     { Title: 'Legacy CRM support', ProjectCode: 'CRM-00', Client: 'Contoso Retail', ProgramId: 0, ManagerEmails: 'arjun.mehta@contoso.com', IsBillable: true, ProjectStatus: 'Completed', StartDate: addDays(t, -300), EndDate: addDays(t, -40), PlannedHours: 200, HourlyCost: 1400, BillRate: 2800, ColorHex: '#94a3b8' }
   ];
-  seed('TS_Projects', P, author);
-  const pid = (code) => fakeLists().TS_Projects.items.filter((x) => x.ProjectCode === code)[0].Id;
+  seed('BrillTS_Projects', P, author);
+  const pid = (code) => fakeLists().BrillTS_Projects.items.filter((x) => x.ProjectCode === code)[0].Id;
   seed(
-    'TS_Tasks',
+    'BrillTS_Tasks',
     [
       ['WEB-01', 'Discovery workshops', 'Done', ''],
       ['WEB-01', 'Visual design', 'In progress', 'sara.khan@contoso.com'],
@@ -154,9 +154,9 @@ async function main() {
     ].map(([code, title, status, who], i) => ({ Title: title, ProjectId: pid(code), TaskStatus: status, AssigneeEmails: who, IsBillable: code !== 'INT', PlannedHours: 60, SelfAssign: true, DueDate: addDays(t, 7 * (i % 5) - 3) })),
     author
   );
-  seed('TS_Activities', DEFAULT_ACTIVITIES.map((a) => ({ Title: a.title, IsBillable: a.billable, IsActive: true, ColorHex: a.color, IsTimeOff: !!a.timeOff })), author);
-  const task = (title) => fakeLists().TS_Tasks.items.filter((x) => x.Title === title)[0].Id;
-  const act = (title) => fakeLists().TS_Activities.items.filter((x) => x.Title === title)[0].Id;
+  seed('BrillTS_Activities', DEFAULT_ACTIVITIES.map((a) => ({ Title: a.title, IsBillable: a.billable, IsActive: true, ColorHex: a.color, IsTimeOff: !!a.timeOff })), author);
+  const task = (title) => fakeLists().BrillTS_Tasks.items.filter((x) => x.Title === title)[0].Id;
+  const act = (title) => fakeLists().BrillTS_Activities.items.filter((x) => x.Title === title)[0].Id;
   // Four past weeks for everyone: approved, then submitted (waiting), the current week a draft.
   const thisWeek = weekStartOf(t, 1);
   const plan = {
@@ -192,10 +192,10 @@ async function main() {
       lines.forEach((l) => entries.push({ __sheet: `${p.email}|${w}`, UserEmail: p.email, WeekStart: w, ProjectId: pid(l.code), TaskId: l.tk ? task(l.tk) : 0, ActivityId: act(l.a), IsBillable: l.code !== 'INT', DayHours: JSON.stringify(l.hours), DayNotes: '{}', TotalHours: l.total, CustomValues: JSON.stringify(l.ticket ? { ticket: l.ticket } : {}), CostRate: status === 'Approved' ? p.cost : 0, BillRate: status === 'Approved' ? p.bill : 0 }));
     });
   });
-  seed('TS_Timesheets', sheets, author);
-  const sheetId = (k) => fakeLists().TS_Timesheets.items.filter((x) => x.Title === k)[0].Id;
-  seed('TS_TimeEntries', entries.map((e) => { const { __sheet, ...rest } = e; return { ...rest, SheetId: sheetId(__sheet), Title: __sheet }; }), author);
-  seed('TS_Notifications', [{ Title: 'Timesheet to approve: Rahul Sharma, week of last week', Body: 'Rahul Sharma submitted 40 hours (32 billable).', LinkPath: 'approvals', Recipient: me.email, IsRead: false, Kind: 'sheetSubmitted' }], author);
+  seed('BrillTS_Timesheets', sheets, author);
+  const sheetId = (k) => fakeLists().BrillTS_Timesheets.items.filter((x) => x.Title === k)[0].Id;
+  seed('BrillTS_TimeEntries', entries.map((e) => { const { __sheet, ...rest } = e; return { ...rest, SheetId: sheetId(__sheet), Title: __sheet }; }), author);
+  seed('BrillTS_Notifications', [{ Title: 'Timesheet to approve: Rahul Sharma, week of last week', Body: 'Rahul Sharma submitted 40 hours (32 billable).', LinkPath: 'approvals', Recipient: me.email, IsRead: false, Kind: 'sheetSubmitted' }], author);
   if (params.get('tm')) seedTaskManager(author);
   if (params.get('leave')) {
     // Approved leave for the signed-in person: Wednesday to the following Monday (it spans a weekend), and a rejected request.
@@ -205,9 +205,9 @@ async function main() {
       { Title: 'Rejected', EmployeeEmail: me.email, StartDate: addDays(w, 0) + 'T00:00:00Z', EndDate: addDays(w, 0) + 'T00:00:00Z', RequestStatus: 'Rejected', LeaveType: 'Sick leave' }
     ], author);
   }
-  ['TS_Tickets', 'TS_SupportTickets', 'TS_EmailQueue', 'TS_AuditLog', 'TS_SavedReports'].forEach((l) => seed(l, [], author));
+  ['BrillTS_Tickets', 'BrillTS_SupportTickets', 'BrillTS_EmailQueue', 'BrillTS_AuditLog', 'BrillTS_SavedReports'].forEach((l) => seed(l, [], author));
   // ?plan=: a licence for that plan, as if activated (signed with the preview key pair).
-  if (params.get('plan')) seed('TS_Settings', [{ Title: 'LicenseKey', SettingValue: await previewKey(params.get('plan'), '6f1c2a9e-0b7d-4c55-9e3a-2d8f41b07c13') }], author);
+  if (params.get('plan')) seed('BrillTS_Settings', [{ Title: 'LicenseKey', SettingValue: await previewKey(params.get('plan'), '6f1c2a9e-0b7d-4c55-9e3a-2d8f41b07c13') }], author);
   render();
 }
 

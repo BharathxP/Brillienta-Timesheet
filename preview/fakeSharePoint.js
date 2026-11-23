@@ -285,7 +285,7 @@ export function createFakeHttp(user) {
 /** ?flow=1: stands in for the Power Automate flow — sends queued emails a few seconds later ("fail" in the address fails). */
 export function simulateFlow() {
   setInterval(() => {
-    const q = lists.TS_EmailQueue;
+    const q = lists.BrillTS_EmailQueue;
     if (!q) return;
     q.items.forEach((row) => {
       if (row.MailStatus !== 'Queued' || Date.now() - Date.parse(row.Created) < 3000) return;

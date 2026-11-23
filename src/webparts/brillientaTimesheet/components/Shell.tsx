@@ -231,7 +231,7 @@ export function Shell(props: { frameClass: string; frameStyle?: React.CSSPropert
   );
 }
 
-/** In-app notifications (TS_Notifications), refreshed every two minutes. */
+/** In-app notifications (BrillTS_Notifications), refreshed every two minutes. */
 function NotificationBell(): JSX.Element {
   const { svc, me, navigate, notificationsVersion } = useApp();
   const [items, setItems] = React.useState<INotification[]>([]);

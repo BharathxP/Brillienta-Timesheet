@@ -48,7 +48,7 @@ export interface IAppContext {
   savedConfig: ITimesheetConfig;
   saveConfig: (c: ITimesheetConfig, what?: string) => Promise<void>;
   me: ICurrentUser;
-  /** The signed-in person's TS_Users row. */
+  /** The signed-in person's BrillTS_Users row. */
   myUser?: ITsUser;
   role: Role;
   roleReason: string;
