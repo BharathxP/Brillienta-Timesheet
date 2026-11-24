@@ -1,12 +1,12 @@
 import * as React from 'react';
-import { Checkbox, ChoiceGroup, DatePicker, DefaultButton, Dropdown, Icon, MessageBar, MessageBarType, PrimaryButton, TextField, Toggle } from '@fluentui/react';
+import { Checkbox, ChoiceGroup, DefaultButton, Dropdown, Icon, MessageBar, MessageBarType, PrimaryButton, TextField, Toggle } from '@fluentui/react';
 import { useApp } from '../AppContext';
 import { CostMode, ICustomColumn, IHourRule, ITimesheetConfig, ROLES, Role } from '../../models/types';
 import { Feature } from '../../services/licensing/plans';
 import { ROLE_LABELS } from '../../services/access';
 import { CURRENCIES } from '../../services/format';
-import { DAY_NAMES, DAY_SHORT, formatDay, fromKey, toKey } from '../../services/dates';
-import { Card, ColorInput, Field, Locked, PageHeader, useBusy } from '../common/Ui';
+import { DAY_NAMES, DAY_SHORT, formatDay } from '../../services/dates';
+import { Card, ColorInput, DateField, Field, Locked, PageHeader, useBusy } from '../common/Ui';
 import { PeopleField } from '../common/Pickers';
 import { NotificationsAdmin, IntegrationsAdmin, LicenceAdmin, SecurityAdmin } from './AdminMore';
 
@@ -224,7 +224,7 @@ function TrackingAdmin(): JSX.Element {
       <Card title="Days without time tracking (holidays)" icon="Vacation">
         <Gate feature="trackingDays" text="Select the days time is tracked: public holidays and per-person working days (Enterprise).">
           <div className="ts-row" style={{ alignItems: 'flex-end' }}>
-            <DatePicker label="Date" value={hDate ? fromKey(hDate) : undefined} onSelectDate={(x) => setHDate(x ? toKey(x) : '')} formatDate={(x) => (x ? formatDay(toKey(x), true) : '')} />
+            <DateField label="Date" value={hDate} onChange={setHDate} />
             <TextField label="Name" value={hName} onChange={(_, v) => setHName(v || '')} placeholder="e.g. Diwali" />
             <DefaultButton
               text="Add"

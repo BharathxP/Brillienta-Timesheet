@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { DefaultButton, Dialog, DialogFooter, DialogType, Icon, MessageBar, MessageBarType, PrimaryButton, Spinner, SpinnerSize, TextField, TooltipHost } from '@fluentui/react';
+import { DatePicker, DayOfWeek, DefaultButton, Dialog, DialogFooter, DialogType, Icon, MessageBar, MessageBarType, PrimaryButton, Spinner, SpinnerSize, TextField, TooltipHost } from '@fluentui/react';
+import { formatDay, fromKey, toKey } from '../../services/dates';
 import { initials } from '../../services/format';
 import { useApp } from '../AppContext';
 import { Feature, featurePlan, planInfo } from '../../services/licensing/plans';
@@ -291,6 +292,25 @@ export function Field(props: { label: string; children: React.ReactNode; hint?: 
       {props.children}
       {props.hint && <div className="ts-muted ts-small" style={{ marginTop: 4 }}>{props.hint}</div>}
     </div>
+  );
+}
+
+/**
+ * A date (yyyy-mm-dd) picker: wide enough to show the date, the calendar starting on the organisation's first day of
+ * the week, dates shown as "25 Nov 2026".
+ */
+export function DateField(props: { label?: string; value: string; onChange: (key: string) => void; ariaLabel?: string; minWidth?: number }): JSX.Element {
+  const { config } = useApp();
+  return (
+    <DatePicker
+      label={props.label}
+      ariaLabel={props.ariaLabel || props.label}
+      firstDayOfWeek={config.weekStart as DayOfWeek}
+      value={props.value ? fromKey(props.value) : undefined}
+      onSelectDate={(d) => props.onChange(d ? toKey(d) : '')}
+      formatDate={(d) => (d ? formatDay(toKey(d), true) : '')}
+      styles={{ root: { minWidth: props.minWidth || 180 } }}
+    />
   );
 }
 

@@ -76,3 +76,13 @@ test('leave spanning a weekend counts only on working days', () => {
   // Wed–Fri leave = 24 h; Sat and Sun must not add another 16 h (which would break the 45 h maximum).
   assert.equal(R.blocking(R.validateWeek({ cfg, days, entries: [work], timeOff: leave, forSubmit: true })), false);
 });
+
+test('a public holiday on a working day lowers the weekly minimum by a standard day', () => {
+  const cfg = { ...defaultConfig(), holidays: [{ date: '2026-11-18', name: 'Diwali' }, { date: '2026-11-21', name: 'Saturday event' }], limits: { dailyMin: 0, dailyMax: 0, weeklyMin: 40, weeklyMax: 0, enforcement: 'block' } };
+  assert.equal(R.weeklyTarget(cfg, days), 32); // Wednesday counts, the Saturday holiday does not
+  const work = entry({ projectId: 1, hours: { '2026-11-16': 8, '2026-11-17': 8, '2026-11-19': 8, '2026-11-20': 8 }, total: 32 });
+  assert.equal(R.blocking(R.validateWeek({ cfg, days, entries: [work], forSubmit: true })), false);
+  const short = entry({ projectId: 1, hours: { '2026-11-16': 8, '2026-11-17': 8, '2026-11-19': 8 }, total: 24 });
+  assert.ok(R.validateWeek({ cfg, days, entries: [short], forSubmit: true }).some((i) => /weekly minimum of 32 h \(40 h less public holidays\)/.test(i.message)));
+  assert.equal(R.weeklyTarget({ ...cfg, limits: { ...cfg.limits, weeklyMin: 0 } }, days), 32); // no minimum: 4 tracking days × 8
+});

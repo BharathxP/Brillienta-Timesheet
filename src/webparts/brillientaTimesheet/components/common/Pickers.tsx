@@ -148,5 +148,5 @@ export function ExportButton(props: { name: string; sheets: () => IXlsxSheet[]; 
     { key: 'xlsx', text: 'Excel workbook (.xlsx)', iconProps: { iconName: 'ExcelDocument' }, onClick: excel },
     { key: 'csv', text: 'CSV (first table)', iconProps: { iconName: 'TextDocument' }, onClick: csv }
   ];
-  return <DefaultButton text={props.text || 'Export'} iconProps={{ iconName: 'Download' }} disabled={props.disabled} split menuProps={{ items }} onClick={excel} />;
+  return <DefaultButton text={props.text || 'Export'} iconProps={{ iconName: 'Download' }} disabled={props.disabled} split splitButtonAriaLabel="More export formats" menuProps={{ items }} onClick={excel} />;
 }

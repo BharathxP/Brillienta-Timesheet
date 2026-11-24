@@ -1,9 +1,9 @@
 import * as React from 'react';
-import { DatePicker, DefaultButton, Dropdown, Panel, PanelType, PrimaryButton, TextField, Toggle } from '@fluentui/react';
+import { DefaultButton, Dropdown, Panel, PanelType, PrimaryButton, TextField, Toggle } from '@fluentui/react';
 import { useApp } from '../AppContext';
 import { ITask } from '../../models/types';
 import { PeopleField } from '../common/Pickers';
-import { formatDay, fromKey, toKey } from '../../services/dates';
+import { DateField } from '../common/Ui';
 import { sameEmail } from '../../services/access';
 
 export function newTask(projectId: number): ITask {
@@ -77,7 +77,7 @@ export function TaskEditor(props: { task: ITask; projectChoices: number[]; onDis
         <div className="ts-form-grid">
           <Dropdown label="Status" selectedKey={t.status} options={['Open', 'In progress', 'Done'].map((s) => ({ key: s, text: s }))} onChange={(_, o) => o && set({ status: o.key as ITask['status'] })} />
           <TextField label="Planned hours" type="number" value={String(t.plannedHours || '')} onChange={(_, v) => set({ plannedHours: Number(v) || 0 })} />
-          <DatePicker label="Due date" value={t.dueDate ? fromKey(t.dueDate) : undefined} onSelectDate={(d) => set({ dueDate: d ? toKey(d) : '' })} formatDate={(d) => (d ? formatDay(toKey(d), true) : '')} />
+          <DateField label="Due date" value={t.dueDate} onChange={(v) => set({ dueDate: v })} />
           <div />
           <Toggle label="Billable" checked={t.billable} onChange={(_, v) => set({ billable: !!v })} disabled={!!project && !project.billable} />
           {has('selfAssign') && <Toggle label="People can assign it to themselves" checked={t.selfAssign} onChange={(_, v) => set({ selfAssign: !!v })} />}

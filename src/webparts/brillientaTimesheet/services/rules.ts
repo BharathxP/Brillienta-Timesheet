@@ -32,6 +32,18 @@ export function isTrackingDay(cfg: ITimesheetConfig, day: DateKey, user?: ITsUse
   return workDaysFor(cfg, user).indexOf(dayOfWeek(day)) >= 0 && !holidayOn(cfg, day);
 }
 
+/**
+ * The hours a person is expected to log in the week: the weekly minimum less a standard day for each public holiday
+ * on one of their working days, or (without a minimum) their tracking days × the standard day.
+ */
+export function weeklyTarget(cfg: ITimesheetConfig, days: DateKey[], user?: ITsUser, weeklyMin?: number): number {
+  const min = weeklyMin !== undefined ? weeklyMin : limitsFor(cfg, user).weeklyMin;
+  const tracking = days.filter((d) => isTrackingDay(cfg, d, user)).length;
+  if (!min) return tracking * cfg.standardDay;
+  const holidays = days.filter((d) => holidayOn(cfg, d) && workDaysFor(cfg, user).indexOf(dayOfWeek(d)) >= 0).length;
+  return Math.max(0, min - holidays * cfg.standardDay);
+}
+
 /** The first hour rule (in order) whose conditions all match the person. */
 export function matchRule(rules: IHourRule[], user: ITsUser): IHourRule | undefined {
   if (user.ruleId) {
@@ -132,7 +144,12 @@ export function validateWeek(input: IValidateInput): IIssue[] {
   });
   week = round2(week);
   if (limits.weeklyMax > 0 && week > limits.weeklyMax) issues.push({ level, message: `${week} h this week is more than the weekly maximum of ${limits.weeklyMax} h.` });
-  if (input.forSubmit && limits.weeklyMin > 0 && week < limits.weeklyMin) issues.push({ level, message: `${week} h this week is less than the weekly minimum of ${limits.weeklyMin} h.` });
+  // Public holidays on working days lower the minimum by a standard day each (approved leave is already counted above).
+  const minimum = limits.weeklyMin > 0 ? weeklyTarget(cfg, days, user, limits.weeklyMin) : 0;
+  if (input.forSubmit && minimum > 0 && week < minimum) {
+    const why = minimum < limits.weeklyMin ? ` (${limits.weeklyMin} h less public holidays)` : '';
+    issues.push({ level, message: `${week} h this week is less than the weekly minimum of ${minimum} h${why}.` });
+  }
   if (input.forSubmit) {
     if (!entries.some((e) => e.total > 0) && week === 0) issues.push({ level: 'error', message: 'The week has no hours.' });
     entries.forEach((e) => {

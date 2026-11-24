@@ -1,10 +1,9 @@
 import * as React from 'react';
-import { Checkbox, DatePicker, DefaultButton, Dropdown, MessageBar, MessageBarType, Panel, PanelType, PrimaryButton, TextField, Toggle } from '@fluentui/react';
+import { Checkbox, DefaultButton, Dropdown, MessageBar, MessageBarType, Panel, PanelType, PrimaryButton, TextField, Toggle } from '@fluentui/react';
 import { useApp } from '../AppContext';
 import { ICustomColumn, IProject } from '../../models/types';
 import { PeopleField } from '../common/Pickers';
-import { ColorInput, Field, Locked } from '../common/Ui';
-import { formatDay, fromKey, toKey } from '../../services/dates';
+import { ColorInput, DateField, Field, Locked } from '../common/Ui';
 import { PALETTE } from '../../schema/defaults';
 import { sameEmail } from '../../services/access';
 
@@ -143,9 +142,9 @@ export function ProjectEditor(props: { project: IProject; onDismiss: () => void;
         <PeopleField label="Members" value={p.memberEmails} onChange={(v) => set({ memberEmails: v })} hint="Nobody listed: everyone can log time on this project." />
         <h3 className="ts-card-title" style={{ marginTop: 10 }}>Dates and planned hours</h3>
         <div className="ts-form-grid">
-          <DatePicker label="Start date" value={p.startDate ? fromKey(p.startDate) : undefined} onSelectDate={(d) => set({ startDate: d ? toKey(d) : '' })} formatDate={(d) => (d ? formatDay(toKey(d), true) : '')} />
+          <DateField label="Start date" value={p.startDate} onChange={(v) => set({ startDate: v })} />
           {has('projectEndDates') ? (
-            <DatePicker label="End date" value={p.endDate ? fromKey(p.endDate) : undefined} onSelectDate={(d) => set({ endDate: d ? toKey(d) : '' })} formatDate={(d) => (d ? formatDay(toKey(d), true) : '')} />
+            <DateField label="End date" value={p.endDate} onChange={(v) => set({ endDate: v })} />
           ) : (
             <Field label="End date">
               <Locked feature="projectEndDates">Project end dates and notifications.</Locked>

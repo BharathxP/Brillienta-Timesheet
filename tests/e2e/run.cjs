@@ -550,6 +550,347 @@ async function main() {
     log('Ana deactivated → removed from BrillTS External Users automatically');
   });
 
+  // ---------------------------------------------------------------- settings that change behaviour
+  const L = 'window.__tsLists()';
+  const saveAdmin = async (page, t) => {
+    await page.locator('.ts-page button:has-text("Save")').last().click();
+    await t.toast(/Settings saved/);
+  };
+
+  await journey('J17', 'General settings: organisation name and currency take effect', browser, async (page, t, log) => {
+    await t.open('role=admin', 'admin/general');
+    await page.getByLabel('Organisation name').fill('Contoso India');
+    await t.dropdownByLabel('Currency', 'USD');
+    await saveAdmin(page, t);
+    expect((await page.locator('.ts-nav-workspace strong').textContent()) === 'Contoso India', 'organisation name not shown in the navigation');
+    log('organisation name shown in the navigation');
+    await t.go('reports');
+    await page.locator('button[role="tab"]:has-text("Cost & margin")').click();
+    await page.waitForTimeout(600);
+    const cost = await page.locator('.ts-kpi').filter({ hasText: 'Cost' }).first().locator('.ts-kpi-value').textContent();
+    expect(/^\$/.test(cost.trim()), 'cost not in USD: ' + cost);
+    log(`reports use the new currency (${cost.trim()})`);
+  });
+
+  await journey('J18', 'Week start: weeks begin on Sunday after the change', browser, async (page, t, log) => {
+    await t.open('role=admin', 'admin/tracking');
+    await t.dropdownByLabel('Week starts on', 'Sunday');
+    await saveAdmin(page, t);
+    await t.signIn('member', 'timesheet');
+    const first = (await page.locator('table.ts-sheet th.ts-day').first().textContent()).trim();
+    expect(/^Sun/.test(first), 'first day column: ' + first);
+    log('the timesheet grid now starts on Sunday');
+  });
+
+  await journey('J19', 'Required notes and activities block submitting until filled in', browser, async (page, t, log) => {
+    await t.open('role=admin', 'admin/tracking');
+    await page.locator('.ms-Toggle:has-text("A note is required on every day with hours") button').click();
+    await page.locator('.ms-Toggle:has-text("An activity is required on every line") button').click();
+    await saveAdmin(page, t);
+    log('notes and activities made required');
+    await t.signIn('member', 'timesheet');
+    await t.click('Add line');
+    await t.pick('Project', 'Website redesign');
+    const last = (await page.locator('table.ts-sheet tbody tr:not(.ts-sheet-total)').count()) - 1;
+    await t.fillHours(last, [1]);
+    await t.click('Submit');
+    await page.waitForTimeout(500);
+    expect(await page.isVisible('.ts-issues .is-error:has-text("add a note")'), 'missing-note error');
+    expect(await page.isVisible('.ts-issues .is-error:has-text("needs an activity")'), 'missing-activity error');
+    expect(!(await page.isVisible('.ms-Dialog-main')), 'submit allowed');
+    log('submit blocked: notes missing and a line without an activity');
+  });
+
+  await journey('J20', 'Required custom column on timesheet lines', browser, async (page, t, log) => {
+    await t.open('role=admin', 'admin/columns');
+    await page.locator('.ms-Checkbox:has-text("Required") label').first().click();
+    await saveAdmin(page, t);
+    await t.signIn('member', 'timesheet');
+    await t.click('Add line');
+    await t.pick('Project', 'Mobile app');
+    const last = (await page.locator('table.ts-sheet tbody tr:not(.ts-sheet-total)').count()) - 1;
+    await t.fillHours(last, [2]);
+    await t.click('Submit');
+    await page.waitForTimeout(500);
+    expect(await page.isVisible('.ts-issues .is-error:has-text("Ticket #")'), 'required column error not shown');
+    log('submit blocked until "Ticket #" is filled in');
+    await page.locator('table.ts-sheet tbody tr:not(.ts-sheet-total)').nth(last).locator('input[aria-label="Ticket #"]').fill('APP-77');
+    await t.click('Submit');
+    await page.waitForSelector('.ms-Dialog-main');
+    await t.dialogButton('Submit');
+    await t.toast(/Submitted/);
+    const v = await t.lists(() => window.__tsLists().BrillTS_TimeEntries.items.filter((x) => /APP-77/.test(x.CustomValues || '')).length);
+    expect(v === 1, 'custom value not stored');
+    log('value stored with the line and the week submitted');
+  });
+
+  await journey('J21', 'Holidays: a holiday is marked on the grid and lowers the weekly target', browser, async (page, t, log) => {
+    await t.open('role=member', 'timesheet');
+    const before = (await page.locator('.ts-kpi').filter({ hasText: 'Target' }).locator('.ts-kpi-value').textContent()).trim();
+    await t.signIn('admin', 'admin/tracking');
+    const field = page.locator('.ms-DatePicker').first();
+    const width = (await field.boundingBox()).width;
+    expect(width >= 170, `holiday date field is ${width}px wide`);
+    await field.click();
+    const wed = await page.evaluate(() => {
+      const d = new Date();
+      const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7));
+      const w = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 2);
+      const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      return { label: `${w.getDate()}, ${months[w.getMonth()]}, ${w.getFullYear()}`, key: `${w.getFullYear()}-${('0' + (w.getMonth() + 1)).slice(-2)}-${('0' + w.getDate()).slice(-2)}` };
+    });
+    const firstDay = (await page.locator('.ms-Callout th, .ms-Callout [role="columnheader"]').first().textContent()).trim();
+    expect(/^M/.test(firstDay), 'calendar does not start on Monday: ' + firstDay);
+    await page.locator(`.ms-Callout button[aria-label="${wed.label}"]`).first().click();
+    expect(width >= 170, 'date field');
+    await page.getByLabel('Name', { exact: true }).fill('Founders day');
+    await page.locator('button:has-text("Add")').filter({ hasNotText: 'Add a' }).first().click();
+    await saveAdmin(page, t);
+    log(`holiday added on ${wed.key}`);
+    await t.signIn('member', 'timesheet');
+    expect(await page.isVisible('th.ts-day:has-text("Holiday")'), 'holiday not marked on the grid');
+    const after = (await page.locator('.ts-kpi').filter({ hasText: 'Target' }).locator('.ts-kpi-value').textContent()).trim();
+    expect(before === '40 h' && after === '32 h', `target ${before} → ${after}`);
+    log(`grid marks the holiday; weekly target ${before} → ${after}`);
+  });
+
+  await journey('J22', 'Rule-based limits: external users are blocked above 8 h a day', browser, async (page, t, log) => {
+    await t.open('role=admin', 'admin/hours');
+    await t.click('Add a rule');
+    const card = page.locator('.ts-card').filter({ has: page.locator('input[aria-label="Rule name"]') }).first();
+    await card.locator('input[aria-label="Rule name"]').fill('Contractors');
+    await card.locator('.ms-Checkbox:has-text("Only external users") label').click();
+    await card.locator('.ms-Checkbox:has-text("Block submitting when broken") label').click();
+    await card.getByLabel('Daily maximum').fill('8');
+    await saveAdmin(page, t);
+    log('rule "Contractors": external users, max 8 h a day, enforced');
+    await t.signIn('ana', 'timesheet');
+    expect(await page.isVisible('text=Rule: Contractors'), 'rule not shown as the source of the limits');
+    await t.fillHours(0, [9, 8, 8, 8, 8]);
+    await t.click('Submit');
+    await page.waitForTimeout(500);
+    expect(await page.isVisible('.ts-issues .is-error:has-text("daily maximum of 8 h")'), 'rule not enforced');
+    log('Ana (external) sees "Rule: Contractors" and cannot submit 9 h on Monday');
+    await t.signIn('member', 'timesheet');
+    expect(!(await page.isVisible('text=Rule: Contractors')), 'rule applied to a member');
+    log('members keep the organisation limits');
+  });
+
+  await journey('J23', 'Per-person working days: Saturday becomes a working day for one person', browser, async (page, t, log) => {
+    await t.open('role=admin', 'people');
+    await page.locator('td:has-text("Rahul Sharma")').click();
+    await page.locator('.ms-Panel-main .ms-Checkbox:has-text("Sat") label').click();
+    await page.locator('.ms-Panel-main button:has-text("Save")').click();
+    await t.toast(/Saved/);
+    await t.signIn('member', 'timesheet');
+    const sat = await page.locator('table.ts-sheet th.ts-day').nth(5).getAttribute('class');
+    const sun = await page.locator('table.ts-sheet th.ts-day').nth(6).getAttribute('class');
+    expect(!/is-off/.test(sat) && /is-off/.test(sun), `Sat "${sat}" Sun "${sun}"`);
+    expect(await page.isVisible('.ts-kpi-hint:has-text("6 working days")'), 'not counted as 6 working days');
+    log('Rahul: Saturday is a working day (6 working days this week); Sunday stays off');
+  });
+
+  await journey('J24', 'Email templates: an edited subject is what approvers receive', browser, async (page, t, log) => {
+    await t.open('role=admin', 'admin/notifications');
+    const subject = page.locator('.ts-tpl-grid').getByLabel('Subject');
+    await subject.fill('Please approve {{person}} ({{hours}} h)');
+    await saveAdmin(page, t);
+    log('“Timesheet submitted” subject changed');
+    await t.signIn('member', 'timesheet');
+    await t.click('Submit');
+    await page.waitForSelector('.ms-Dialog-main');
+    await t.dialogButton('Submit');
+    await t.toast(/Submitted/);
+    const titles = await t.lists(() => window.__tsLists().BrillTS_Notifications.items.filter((x) => x.Kind === 'sheetSubmitted').map((x) => x.Title));
+    expect(titles.some((x) => /^Please approve Rahul Sharma \(\d+(\.\d+)? h\)$/.test(x)), 'titles: ' + titles.slice(-3).join(' | '));
+    const mail = await t.lists(() => window.__tsLists().BrillTS_EmailQueue.items.filter((x) => /^Please approve Rahul/.test(x.Title)).length);
+    expect(mail >= 1, 'email not queued with the new subject');
+    log('notification and email use the new subject');
+  });
+
+  await journey('J25', 'Programmes: a new programme makes its manager a Programme Manager', browser, async (page, t, log) => {
+    await t.open('role=admin', 'programs');
+    await t.click('New programme');
+    await page.locator('.ms-Panel-main').getByLabel('Programme', { exact: true }).fill('Retail');
+    const picker = page.locator('.ms-Panel-main .ts-picker input');
+    await picker.fill('Meera');
+    await page.waitForTimeout(300);
+    await picker.press('Enter');
+    await page.locator('.ms-Panel-main button:has-text("Save")').click();
+    await t.toast(/Programme saved/);
+    const role = await t.lists(() => window.__tsLists().BrillTS_Users.items.filter((x) => x.Email === 'meera.iyer@contoso.com')[0].UserRole);
+    expect(role === 'programManager', 'role ' + role);
+    log('programme "Retail" created; Meera is now a Programme Manager');
+    await t.signIn('manager', 'programs');
+    expect(await page.isVisible('.ts-nav-item:has-text("Programmes")') && (await page.isVisible('text=Retail')), 'Meera does not see her programme');
+    log('Meera sees Programmes and her programme');
+  });
+
+  await journey('J26', 'People: add a person; the Standard user limit warns when exceeded', browser, async (page, t, log) => {
+    await t.open('role=admin&plan=standard', 'people');
+    for (const [name, email] of [['Nina Patel', 'nina.patel@contoso.com'], ['Omar Farouk', 'omar.farouk@contoso.com'], ['Lea Martin', 'lea.martin@contoso.com']]) {
+      await t.click('Add person');
+      await page.locator('.ms-Panel-main').getByLabel('Name', { exact: true }).fill(name);
+      await page.locator('.ms-Panel-main').getByLabel('Email', { exact: true }).fill(email);
+      await page.locator('.ms-Panel-main button:has-text("Save")').click();
+      await t.toast(/Saved/);
+      await page.waitForTimeout(400);
+    }
+    const n = await t.lists(() => window.__tsLists().BrillTS_Users.items.filter((x) => x.IsActive !== false).length);
+    expect(n === 11, 'active users ' + n);
+    log('3 people added (11 active)');
+    expect(await page.isVisible('text=beyond the 10 users'), 'user limit warning not shown');
+    log('Standard plan (10 users): warning that 1 person is beyond the limit');
+  });
+
+  await journey('J27', 'Approvals: send back several weeks at once', browser, async (page, t, log) => {
+    await t.open('role=manager', 'approvals');
+    const n = await page.locator('table.ts-table tbody tr').count();
+    expect(n >= 2, 'need at least 2 waiting, have ' + n);
+    await page.locator('thead [aria-label="Select all"]').click({ force: true });
+    await page.locator('.ts-bulkbar button:has-text("Send back")').click();
+    await page.locator('.ms-Dialog-main textarea').fill('Please add task details');
+    await t.dialogButton('Send back');
+    await t.toast(/sent back/);
+    const rejected = await t.lists(() => window.__tsLists().BrillTS_Timesheets.items.filter((x) => x.SheetStatus === 'Rejected' && x.DecidedBy === 'Meera Iyer').length);
+    expect(rejected === n, `${rejected} of ${n} sent back`);
+    const notes = await t.lists(() => window.__tsLists().BrillTS_Notifications.items.filter((x) => x.Kind === 'sheetRejected').length);
+    expect(notes === n, 'people not told');
+    log(`${n} weeks sent back with one reason; each person notified`);
+  });
+
+  await journey('J28', 'My timesheets: statuses, filter and CSV export', browser, async (page, t, log) => {
+    await t.open('role=member', 'history');
+    const approved = Number((await page.locator('.ts-kpi').filter({ hasText: 'Approved' }).locator('.ts-kpi-value').textContent()).trim());
+    expect(approved >= 2, 'approved ' + approved);
+    await page.locator('.ts-kpi').filter({ hasText: 'Approved' }).click();
+    await page.waitForTimeout(300);
+    const rows = await page.locator('table.ts-table tbody tr').count();
+    expect(rows === approved, `filter shows ${rows}, expected ${approved}`);
+    log(`${approved} approved weeks; the Approved filter shows exactly those`);
+    await page.locator('[aria-label="More export formats"]').first().click();
+    const [d] = await Promise.all([page.waitForEvent('download'), page.locator('button[role="menuitem"]:has-text("CSV")').click()]);
+    const file = path.join(OUT, d.suggestedFilename());
+    await d.saveAs(file);
+    const csv = fs.readFileSync(file, 'utf8');
+    expect(/Week starting,Status,Total hours/.test(csv) && csv.split('\n').length > 3, 'csv content');
+    log(`CSV export: ${d.suggestedFilename()} (${csv.split('\n').length - 1} weeks)`);
+  });
+
+  await journey('J29', 'Dashboards: add a widget and keep it after saving', browser, async (page, t, log) => {
+    await t.open('role=admin', 'dashboards');
+    await t.click('Save as my dashboard');
+    await page.locator('.ms-Panel-main').getByLabel('Name').fill('Delivery overview');
+    await page.locator('.ms-Panel-main button:has-text("Add a widget")').click();
+    const titles = page.locator('.ms-Panel-main').getByLabel('Title');
+    await titles.last().fill('Hours by department');
+    await page.locator('.ms-Panel-main button:has-text("Save dashboard")').click();
+    await t.toast(/Dashboard saved/);
+    await page.waitForFunction(() => document.querySelectorAll('.ts-widgets .ts-card').length === 7, undefined, { timeout: 10000 }).catch(() => undefined);
+    const saved = await t.lists(() => window.__tsLists().BrillTS_SavedReports.items.filter((x) => x.Title === 'Delivery overview').map((x) => JSON.parse(x.Definition).widgets.length));
+    expect(saved.length === 1 && saved[0] === 7, 'saved widgets ' + saved);
+    expect((await page.locator('.ts-widgets .ts-card').count()) === 7 && (await page.isVisible('text=Hours by department')), 'widget not shown');
+    log('dashboard "Delivery overview" saved with 7 widgets, the new one shown');
+  });
+
+  await journey('J30', 'Report filters: billable only, one person', browser, async (page, t, log) => {
+    await t.open('role=admin', 'reports');
+    await t.dropdownByLabel('Period', 'Last 90 days');
+    await page.waitForTimeout(800);
+    const kpi = async (label) => Number((await page.locator('.ts-kpi').filter({ has: page.locator('.ts-kpi-label', { hasText: new RegExp(`^${label}$`) }) }).first().locator('.ts-kpi-value').textContent()).replace(/[^\d.]/g, ''));
+    const all = await kpi('Hours');
+    await t.dropdownByLabel('Billable', 'Billable only');
+    await page.waitForTimeout(500);
+    expect((await kpi('Non-billable')) === 0 && (await kpi('Hours')) < all, 'billable filter');
+    log(`billable only: ${await kpi('Hours')} of ${all} h, non-billable 0`);
+    await t.dropdownByLabel('Billable', 'All hours');
+    await page.locator('.ms-Dropdown-container').filter({ has: page.locator('label', { hasText: /^People$/ }) }).locator('.ms-Dropdown').click();
+    await page.locator('.ms-Checkbox:has-text("Sara Khan")').first().click();
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(800);
+    const sara = await t.lists(() => window.__tsLists().BrillTS_TimeEntries.items.filter((x) => x.UserEmail === 'sara.khan@contoso.com').reduce((s, e) => s + Object.values(JSON.parse(e.DayHours || '{}')).reduce((a, b) => a + b, 0), 0));
+    const shown = await kpi('Hours');
+    expect(Math.abs(shown - sara) < 0.01, `Sara ${shown} h shown vs ${sara} h in the data`);
+    log(`one person: ${shown} h, matching Sara's data`);
+  });
+
+  await journey('J31', 'Task Manager: reopening an approved week takes the hours back out', browser, async (page, t, log) => {
+    await t.open('role=admin&tm=1', 'projects');
+    await t.toast(/Task Manager:/, 15000);
+    await t.signIn('member', 'timesheet');
+    await t.click('Add line');
+    await t.pick('Project', 'Customer portal');
+    await t.pick('Task', 'Sign-in and accounts');
+    const last = (await page.locator('table.ts-sheet tbody tr:not(.ts-sheet-total)').count()) - 1;
+    await t.fillHours(last, [3, 3]);
+    await t.click('Submit');
+    await t.dialogButton('Submit');
+    await t.toast(/Submitted/);
+    const spent = () => t.lists(() => window.__tsLists().TM_Tasks.items.filter((x) => x.TaskNumber === 'TM-101')[0].SpentMinutes);
+    const s0 = await spent();
+    await t.signIn('manager', 'approvals');
+    await page.locator('table.ts-table tbody tr').filter({ hasText: 'Rahul Sharma' }).filter({ hasText: 'just now' }).first().click();
+    await page.locator('.ms-Panel-main button:has-text("Approve")').click();
+    await t.toast(/approved/);
+    await page.waitForTimeout(800);
+    const s1 = await spent();
+    expect(s1 - s0 === 360, `approve ${s0} → ${s1}`);
+    await page.locator('button[role="tab"]:has-text("Decided")').click();
+    await page.waitForTimeout(1200);
+    await page.locator('table.ts-table tbody tr').filter({ hasText: 'Rahul Sharma' }).filter({ hasText: 'Approved' }).first().click();
+    await page.locator('.ms-Panel-main button:has-text("Reopen")').click();
+    await page.locator('.ms-Dialog-main textarea').fill('Wrong task');
+    await t.dialogButton('Reopen');
+    await t.toast(/Reopened/);
+    await page.waitForTimeout(800);
+    const s2 = await spent();
+    expect(s2 === s0, `reopen ${s1} → ${s2}`);
+    log(`approved: +360 min in Task Manager; reopened: back to ${s2} min`);
+  });
+
+  await journey('J32', 'Housekeeping: delete a task and an activity, close a support ticket', browser, async (page, t, log) => {
+    await t.open('role=admin', 'projects');
+    await page.locator('td:has-text("Website redesign")').first().click();
+    await page.locator('button[role="tab"]:has-text("Tasks")').click();
+    const before = await page.locator('table.ts-table tbody tr').count();
+    await page.locator('tr:has-text("Accessibility review") button[aria-label="Delete task"]').click();
+    await t.dialogButton('Delete');
+    await t.toast(/Task deleted/);
+    expect((await page.locator('table.ts-table tbody tr').count()) === before - 1, 'task still listed');
+    log('task deleted');
+    await t.go('activities');
+    await page.locator('tr:has-text("Training") button:has-text("Delete")').click();
+    await t.dialogButton('Delete');
+    await t.toast(/Deleted/);
+    expect(!(await t.lists(() => window.__tsLists().BrillTS_Activities.items.some((x) => x.Title === 'Training'))), 'activity not deleted');
+    log('activity deleted');
+    await t.go('support');
+    await page.getByLabel('Subject').fill('How do I export to Power BI?');
+    await page.getByLabel('Details').fill('Details');
+    await t.click('Send ticket');
+    await t.toast(/Ticket sent/);
+    await page.locator('tr:has-text("How do I export to Power BI?") button:has-text("Close")').click();
+    await page.waitForTimeout(800);
+    expect(await page.isVisible('tr:has-text("How do I export to Power BI?") .ts-status:has-text("Closed")'), 'ticket not closed');
+    log('support ticket raised and closed');
+  });
+
+  await journey('J33', 'A project manager’s own week goes to their manager, never to themselves', browser, async (page, t, log) => {
+    await t.open('role=pm', 'timesheet');
+    await t.pick('Project', 'Website redesign');
+    await t.fillHours(0, [8, 8, 8, 8, 8]);
+    await t.click('Submit');
+    await t.dialogButton('Submit');
+    await t.toast(/Submitted for approval/);
+    const to = await t.lists(() => window.__tsLists().BrillTS_Notifications.items.filter((x) => x.Kind === 'sheetSubmitted' && /Arjun/.test(x.Title)).map((x) => x.Recipient));
+    expect(to.indexOf('vikram.rao@contoso.com') >= 0 && to.indexOf('arjun.mehta@contoso.com') < 0, 'approvers: ' + to);
+    log('Arjun’s week went to Vikram (his manager), not to Arjun as project manager');
+    await t.signIn('pm', 'approvals');
+    const own = await page.locator('table.ts-table tbody tr').filter({ hasText: 'Arjun Mehta' }).count();
+    expect(own === 0, 'Arjun can approve his own week');
+    log('Arjun does not see his own week to approve');
+  });
+
   await browser.close();
   const passed = results.filter((r) => r.ok).length;
   console.log(`\n${passed} of ${results.length} journeys passed, ${results.reduce((s, r) => s + r.steps.length, 0)} checks`);

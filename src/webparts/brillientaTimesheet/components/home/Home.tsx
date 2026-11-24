@@ -2,7 +2,7 @@ import * as React from 'react';
 import { DefaultButton, PrimaryButton } from '@fluentui/react';
 import { useApp, buildQuery } from '../AppContext';
 import { addDays, daysBetween, formatDay, formatWeek, periodRange, today, weekStartOf } from '../../services/dates';
-import { isTrackingDay, limitsFor } from '../../services/rules';
+import { isTrackingDay, limitsFor, weeklyTarget } from '../../services/rules';
 import { managedProjects, sameEmail } from '../../services/access';
 import { hours } from '../../services/format';
 import { Card, Empty, Kpi, Progress, StatusBadge, useLoader } from '../common/Ui';
@@ -21,7 +21,7 @@ export function Home(): JSX.Element {
   const weekHours = data ? data.entries.filter((e) => e.weekStart === thisWeek).reduce((s, e) => s + e.total, 0) : 0;
   const days = [0, 1, 2, 3, 4, 5, 6].map((i) => addDays(thisWeek, i));
   const limits = limitsFor(config, myUser);
-  const target = limits.weeklyMin || days.filter((d) => isTrackingDay(config, d, myUser)).length * config.standardDay;
+  const target = weeklyTarget(config, days, myUser, limits.weeklyMin);
   const monthFacts = data
     ? data.entries.reduce(
         (acc, e) => {

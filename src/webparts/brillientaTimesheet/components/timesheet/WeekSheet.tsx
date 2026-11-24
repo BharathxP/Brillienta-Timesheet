@@ -3,7 +3,7 @@ import { ChoiceGroup, DatePicker, DayOfWeek, DefaultButton, Dialog, DialogFooter
 import { useApp, buildQuery } from '../AppContext';
 import { ITimeEntry, ITimeOff, ITimesheet } from '../../models/types';
 import { addDays, formatDay, formatWeek, fromKey, isoWeek, toKey, today, weekDays, weekStartOf } from '../../services/dates';
-import { IIssue, blocking, isTrackingDay, leaveHours, limitsFor, validateWeek } from '../../services/rules';
+import { IIssue, blocking, isTrackingDay, leaveHours, limitsFor, validateWeek, weeklyTarget } from '../../services/rules';
 import { entryTotal } from '../../services/mappers';
 import { hours, formatDateTime } from '../../services/format';
 import { projectsFor } from '../../services/access';
@@ -98,7 +98,7 @@ export function WeekSheet(): JSX.Element {
   const total = lines.reduce((s, e) => s + entryTotal(e), 0);
   const billable = lines.filter((e) => e.billable).reduce((s, e) => s + entryTotal(e), 0);
   const trackingDays = days.filter((d) => isTrackingDay(config, d, myUser)).length;
-  const target = limits.weeklyMin || trackingDays * config.standardDay;
+  const target = weeklyTarget(config, days, myUser, limits.weeklyMin);
   const actor = { email: me.email, name: me.title, role };
 
   const save = async (): Promise<void> => {
