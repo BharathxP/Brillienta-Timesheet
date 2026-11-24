@@ -2,7 +2,7 @@ import * as React from 'react';
 import { DefaultButton, PrimaryButton } from '@fluentui/react';
 import { useApp, buildQuery } from '../AppContext';
 import { addDays, daysBetween, formatDay, formatWeek, periodRange, today, weekStartOf } from '../../services/dates';
-import { isTrackingDay, limitsFor, weeklyTarget } from '../../services/rules';
+import { limitsFor, weeklyTarget } from '../../services/rules';
 import { managedProjects, sameEmail } from '../../services/access';
 import { hours } from '../../services/format';
 import { Card, Empty, Kpi, Progress, StatusBadge, useLoader } from '../common/Ui';

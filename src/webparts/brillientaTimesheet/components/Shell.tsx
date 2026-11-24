@@ -186,12 +186,12 @@ export function Shell(props: { frameClass: string; frameStyle?: React.CSSPropert
           );
         })}
         <div className="ts-nav-footer" title={`Version ${app.appVersion}`}>
-          <span className="ts-msicon">
-            <i />
-            <i />
-            <i />
-            <i />
-          </span>
+          <svg className="ts-footer-logo" viewBox="0 0 120 120" aria-hidden="true">
+            <rect width="120" height="120" rx="28" fill="#038f62" />
+            <circle cx="60" cy="62" r="34" fill="#fff" />
+            <rect x="54" y="16" width="12" height="10" rx="3" fill="#caf578" />
+            <path d="M60 62 V40 M60 62 L76 72" stroke="#17232e" strokeWidth="7" strokeLinecap="round" />
+          </svg>
           <div className="ts-nav-label">
             Brillienta Timesheet
             <span className="ts-sub">

@@ -8,13 +8,15 @@
 // - API: the REST and Microsoft Graph endpoints of every list.
 
 import { LISTS, listTitle } from '../schema/schema';
+import { PRODUCT, SHAREPOINT_APP_ID, TEAMS_MANIFEST_VERSION, WEB_PART_ID } from './product';
 
 export interface ICopilotOptions {
   siteUrl: string;
   orgName: string;
   appName: string;
   prefix: string;
-  appId: string;
+  /** Leave empty for the stable id derived from the site. */
+  appId?: string;
   version: string;
 }
 
@@ -43,17 +45,46 @@ export function declarativeAgent(o: ICopilotOptions): Record<string, unknown> {
   };
 }
 
+/** A stable UUID for a text (FNV-1a based, version-4 layout): the same site always gets the same Copilot app id. */
+export function stableId(text: string): string {
+  let hex = '';
+  for (let round = 0; round < 4; round++) {
+    let h = 0x811c9dc5 ^ round;
+    for (let i = 0; i < text.length; i++) {
+      h ^= text.charCodeAt(i);
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    hex += ('0000000' + h.toString(16)).slice(-8);
+  }
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-${'89ab'[parseInt(hex[16], 16) % 4]}${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+}
+
+/** Icon file names: named after the app id, as SharePoint's Sync to Teams expects for SPFx apps. */
+export function teamsIconNames(id: string): { color: string; outline: string } {
+  return { color: `${id}_color.png`, outline: `${id}_outline.png` };
+}
+
+const developer = (): Record<string, string> => ({ ...PRODUCT.developer });
+
+/**
+ * The Copilot agent's Teams app manifest. Its id is derived from the site, so downloading again and uploading updates
+ * the same agent rather than adding a second one.
+ */
 export function copilotManifest(o: ICopilotOptions): Record<string, unknown> {
+  const id = o.appId || stableId('copilot|' + o.siteUrl.toLowerCase());
   return {
-    $schema: 'https://developer.microsoft.com/json-schemas/teams/v1.19/MicrosoftTeams.schema.json',
-    manifestVersion: '1.19',
+    $schema: `https://developer.microsoft.com/en-us/json-schemas/teams/v${TEAMS_MANIFEST_VERSION}/MicrosoftTeams.schema.json`,
+    manifestVersion: TEAMS_MANIFEST_VERSION,
     version: o.version,
-    id: o.appId,
-    developer: { name: 'Brillienta', websiteUrl: 'https://brillienta.com/timesheet', privacyUrl: 'https://brillienta.com/privacy', termsOfUseUrl: 'https://brillienta.com/terms' },
-    icons: { color: 'color.png', outline: 'outline.png' },
+    id,
+    developer: developer(),
+    icons: teamsIconNames(id),
     name: { short: `${o.appName} assistant`.substring(0, 30), full: `${o.appName} assistant for Microsoft 365 Copilot` },
-    description: { short: 'Ask Copilot about projects, tasks and timesheets.', full: 'A Microsoft 365 Copilot agent that answers questions about projects, tasks, hours and approvals from Brillienta Timesheet.' },
-    accentColor: '#038F62',
+    description: {
+      short: 'Ask Copilot about your projects, tasks, hours and approvals.',
+      full: `A Microsoft 365 Copilot agent for ${o.orgName || 'your organisation'} that answers questions about projects, tasks, hours and approvals from Brillienta Timesheet. It only sees what each person may see in SharePoint.`
+    },
+    accentColor: PRODUCT.accentColor,
     copilotAgents: { declarativeAgents: [{ id: 'timesheetAgent', file: 'declarativeAgent.json' }] }
   };
 }
@@ -63,23 +94,33 @@ export function pbids(siteUrl: string): string {
   return JSON.stringify({ version: '0.1', connections: [{ details: { protocol: 'sharepoint-list', address: { url: siteUrl } }, options: { Implementation: '2.0', ViewMode: 'All' }, mode: 'Import' }] }, null, 2);
 }
 
-/** Teams app package manifest: the web part as a personal app and a configurable channel tab. */
-export function teamsManifest(o: { appId: string; webPartId: string; version: string; tenantHost: string; appName: string }): Record<string, unknown> {
-  const page = `https://${o.tenantHost}/_layouts/15/TeamsLogon.aspx?SPFX=true&dest=/_layouts/15/teamshostedapp.aspx%3FopenPropertyPane=true%26teams%26componentId=${o.webPartId}%26forceLocale={locale}`;
+/**
+ * The Teams app manifest: the web part as a personal app and a channel tab, with the SPFx URLs Teams fills in
+ * ({teamSiteDomain}, {teamSitePath}, {locale}). The same manifest ships in the package (teams/manifest.json, used by
+ * Sync to Teams) and is offered for download in Admin › Integrations › Teams.
+ */
+export function teamsManifest(version: string): Record<string, unknown> {
+  const id = WEB_PART_ID;
+  const personal = `https://{teamSiteDomain}/_layouts/15/TeamsLogon.aspx?SPFX=true&dest=/_layouts/15/teamshostedapp.aspx%3Fteams%26personal%26componentId=${id}%26forceLocale={locale}`;
+  const tab = `https://{teamSiteDomain}{teamSitePath}/_layouts/15/TeamsLogon.aspx?SPFX=true&dest={teamSitePath}/_layouts/15/teamshostedapp.aspx%3FopenPropertyPane=true%26teams%26componentId=${id}%26forceLocale={locale}`;
   return {
-    $schema: 'https://developer.microsoft.com/json-schemas/teams/v1.19/MicrosoftTeams.schema.json',
-    manifestVersion: '1.19',
-    version: o.version,
-    id: o.appId,
-    developer: { name: 'Brillienta', websiteUrl: 'https://brillienta.com/timesheet', privacyUrl: 'https://brillienta.com/privacy', termsOfUseUrl: 'https://brillienta.com/terms' },
-    icons: { color: 'color.png', outline: 'outline.png' },
-    name: { short: o.appName.substring(0, 30), full: o.appName },
-    description: { short: 'Timesheets, approvals and project reports.', full: 'Weekly timesheets, approvals, projects, billable hours and reports from Brillienta Timesheet.' },
-    accentColor: '#038F62',
-    staticTabs: [{ entityId: 'timesheet', name: 'Timesheet', contentUrl: page.replace('openPropertyPane=true%26', ''), scopes: ['personal'] }],
-    configurableTabs: [{ configurationUrl: page, canUpdateConfiguration: true, scopes: ['team'] }],
-    validDomains: ['*.login.microsoftonline.com', '*.sharepoint.com', 'resourceseng.blob.core.windows.net'],
-    webApplicationInfo: { resource: `https://${o.tenantHost}`, id: '00000003-0000-0ff1-ce00-000000000000' }
+    $schema: `https://developer.microsoft.com/en-us/json-schemas/teams/v${TEAMS_MANIFEST_VERSION}/MicrosoftTeams.schema.json`,
+    manifestVersion: TEAMS_MANIFEST_VERSION,
+    version,
+    // The web part id, as Sync to Teams uses: the app is updated in place, never added twice.
+    id,
+    developer: developer(),
+    name: { short: PRODUCT.name, full: PRODUCT.name },
+    description: { short: PRODUCT.shortDescription, full: PRODUCT.longDescription },
+    icons: teamsIconNames(id),
+    accentColor: PRODUCT.accentColor,
+    staticTabs: [{ entityId: id, name: 'Timesheet', contentUrl: personal, websiteUrl: PRODUCT.developer.websiteUrl, scopes: ['personal'] }],
+    configurableTabs: [{ configurationUrl: tab, canUpdateConfiguration: true, scopes: ['team'], context: ['channelTab'] }],
+    // Works in standard, private and shared channels: the tab doesn't use channel or team membership (tier1).
+    supportsChannelFeatures: 'tier1',
+    permissions: ['identity'],
+    validDomains: ['*.login.microsoftonline.com', '*.sharepoint.com', '*.sharepoint-df.com', 'spoppe-a.akamaihd.net', 'spoprod-a.akamaihd.net', 'resourceseng.blob.core.windows.net', 'msft.spoppe.com'],
+    webApplicationInfo: { resource: 'https://{teamSiteDomain}', id: SHAREPOINT_APP_ID }
   };
 }
 

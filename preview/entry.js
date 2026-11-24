@@ -169,12 +169,16 @@ async function main() {
     'tom.becker@contoso.com': [['APP-02', 'Test automation', 'Testing', '', 8]],
     'ana.lopez@fabrikam.com': [['APP-02', '', 'Development', '', 8]]
   };
+  // ?demo=1 (marketplace and guide screenshots): the signed-in person also works on client projects, and has started
+  // this week.
+  const demo = !!params.get('demo');
+  if (demo) plan[me.email] = [['WEB-01', 'Front-end build', 'Project management', 'FE-140', 3], ['APP-02', 'API integration', 'Meetings', '', 2], ['DATA-03', 'Pipeline design', 'Development', 'DP-31', 2], ['INT', '', 'Internal', '', 1]];
   const sheets = [];
   const entries = [];
   PEOPLE.forEach((p, n) => {
     [4, 3, 2, 1, 0].forEach((ago) => {
       const w = addDays(thisWeek, -7 * ago);
-      if (p.email === me.email && ago === 0) return; // my current week starts empty (or from the sample below)
+      if (p.email === me.email && ago === 0 && !demo) return; // my current week starts empty (or from the sample below)
       const status = ago >= 2 ? 'Approved' : ago === 1 ? (n % 3 === 0 ? 'Draft' : 'Submitted') : 'Draft';
       const lines = plan[p.email].map(([code, tk, a, ticket, h]) => {
         const hours = {};

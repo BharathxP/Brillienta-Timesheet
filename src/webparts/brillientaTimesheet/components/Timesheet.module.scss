@@ -324,25 +324,10 @@
         color: var(--ts-muted);
       }
     }
-    .ts-msicon {
-      display: inline-grid;
-      grid-template-columns: repeat(2, 9px);
-      gap: 2px;
+    .ts-footer-logo {
+      width: 20px;
+      height: 20px;
       flex: none;
-      i {
-        width: 9px;
-        height: 9px;
-        background: #f25022;
-      }
-      i:nth-child(2) {
-        background: #7fba00;
-      }
-      i:nth-child(3) {
-        background: #00a4ef;
-      }
-      i:nth-child(4) {
-        background: #ffb900;
-      }
     }
 
     // ------------------------------------------------------------- top bar

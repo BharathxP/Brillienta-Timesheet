@@ -6,17 +6,28 @@
   "version": "*",
   "manifestVersion": 2,
   "requiresCustomScript": false,
-  "supportedHosts": ["SharePointWebPart", "SharePointFullPage", "TeamsTab", "TeamsPersonalApp"],
+  "supportedHosts": [
+    "SharePointWebPart",
+    "SharePointFullPage",
+    "TeamsTab",
+    "TeamsPersonalApp"
+  ],
   "supportsThemeVariants": true,
   "supportsFullBleed": true,
   "preconfiguredEntries": [
     {
       "groupId": "5c03119e-3074-46fd-976b-c60198311f70",
-      "group": { "default": "Advanced" },
-      "title": { "default": "Brillienta Timesheet" },
-      "description": { "default": "Weekly timesheets, projects, approvals, billable hours and cost reports." },
-      "officeFabricIconFontName": "Clock",
-      "properties": {}
+      "group": {
+        "default": "Advanced"
+      },
+      "title": {
+        "default": "Brillienta Timesheet"
+      },
+      "description": {
+        "default": "Weekly timesheets, projects, approvals, billable hours and cost reports."
+      },
+      "properties": {},
+      "iconImageUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAANq0lEQVR4AexcCXgURRb+qyckYYEcoBgQCKABFFC5NH5cK6CwgILcREASQQSVI0FOOUSRMwmHoIImyC0YIRLkVkBhEZTT/dYQIpdAWFDCkYQc0731epiEZJJMMtPVM2Ommddd/erVq/f+v7uru7qDBHuXRa/4GCJDB0hRofMNUWFfGaJDD0tRoVcM0WHK30nUnKLCfjLwHKWosLmUM3ju9sJnGwFRgx6WokLHcLD3GIxeNyGxVYyxCDD0BFgLXg7A32xRc2J4mnJkDO9QzpQ7YSBFh40Gx8SWlEtHQPRgPyk6dI4EQxJjLApg7VDmF9aOAdGECT8zZmFpiH9pICkZAVG9y3PnEySwswxsHAe/fGk6KQu2hAljmCDd9U7mB+k4cMxKkrdk1ShyUD2JVTrGnc/i4PtZtS/jBhwnf44Tv0pUPIoFYfWtwVE8AZFhz0mS4QgDrDqy1lFZq2eMNZAU5TAiX2tfXO5FEkCDrCQpuxiYT3EO3HVFI0DYSZK8gw/SbxdlVTgBUWEvAGw+d2CAe7ELARVDBQsQNbgTClksCVg4OEhiykbGYFkH92ILAoSlBGk9+HhasH1+kOeEVZKMUgJnzX3ZKYiUnfucBF9J8vim4MNbPgIkT2UeN6xnZ1/O39xBETJ+MyPleM64v/s8AqIH1+YVQ7i4f2IRGIZ5Q+qYu8glQFLYdAZmMFc465aPT2jwgAeaVi+XT0hHdc4atzkuxpi3ZDBOM++bCFj4WiM+xzHArHTW7ZMB5bBj0IOI7VEZS7r65xPSUR3ZOGv8uXExDMCCQU/QvkqAZFQGuMLR3zHICxW91JApdguhuufqeFronU3BwAyS7BFCcZmyYegOF1iCa3hZjTK4pnUbq070MLiHuYT5gxswPjrr0ae9faRmylZdpGUrVm2cwUDFnN/4SHxxiaPfGUDTOgZJkTrxS5DSQGvHbn8lRUAJlhiDy7y9+j4502pmO8/ctWrjLAaEPZ8xZS5DwObfMrDg37fx44VMHL2clU9IR3UJia5DgKKwAInf/+tEgP3H3e1MBV+eysA722/izYTUfEI6qkvLco1BWEWDX30kXnCZt1xVvCuiYZWH0b7WYwhpEIzwZh1VoTLpqI5seE6u8vOTGOC0N85+Xv9Afw706n+9jmvDF+HqGwtxYuAM7OgxFis7DcXc1n1UoTLpqI5syJba9Kv/DMiHs7JB2NMZ4FTxeRvKYXTTF7C3zwRcH74YqzjQBKS/V4USx0m21IZIIB/ka2ST50G+S+xEJ0OnIcDAJAxt3Banw2Zjfpu+aFU9SDMIyFdU236q7yGN24D60sy5nY6cgoBeQS1watD7+Lj9IFSvIG5IIt+ftH9V7atXUHM7odOmuUMJqFjOCwndR2N9lzdQz1+/mzHqa32X4Yh/aSQqeXprg6SNXhxGwKN+VXEkZBo61W5sY+j2N+tS90kc6jeFk/+Q/c5s9OAQAno82kwFP8jftsQVRUFc/FYMGzVOlU1bttmYPlC/coBKQuc66vS8zX5sbagrARJ/9o7kg+GGriPsOvWXxa7GmxGTEL91hyrDx0zApzGrbMUAPl7lEd9tJKYFdwPFaLMjGxrqSkD7Wo/j7aeK/VCsRCls3/29hV1hOgujYhSMTwlMfqYrnq/VsBir0ldZa6EbAUF+D+HLzsP5EWZ/l2np6RZ5padnWOhKq5D4rfDazsN0HRPsR6MEWdKdBp3idKqXwNyhJr786XvTiyPh46nPB+C6EDCndW9+VOl3m2kvgzQwz27dy143JWovnIBAnyp4rWGbEgXjTEYUc22fB4SHJJyAWa16wSAJ70ZzoAyShA9b9dTcb0GHQpF5ttoj6FPv6YJ9usw+xd6IT3+LDFgoAR+0FH8EiQSHfM9p04c2wkQYAR0DG6FtDdf/wxrReQgjoG1N1wfffNh3rN3IXNR8K4yAbo801TxYRznsGChuwlAIAfX51DKJowCDxh0/8UANVKvgq7FXkzshBHQUPMVMs6GFiSkl7deMMbxYt4n2jrlHIQQ89WBN7lrM75djJ5F4OhmM8emz++Q3rqM6Mb0CwdXqCnEthIBAQU+QazduQpfeA5GVnW0BRlZ2llq3Pi7eok4LhaichBAg4hH+4qXLeHfGHBXL6oEVMG1pc6ze216VqUuaI6CmafJs0nuzcOlKimqn5UpEThSf5gQY+JTuwxX9yLemsmDpcqRnZKBKVW9ErX0WzVtVhW9lL1VatK6K6HWt4FfFEzQtvejjz6H1EuAqg3CNSv7wkAxa54+jx0+pPtt2roYKlSz/CqaiTzm06VRdtTl20mSr7mi08jJ4wJe/OdPIXa4bzc+AgH+IuV07f/EPNegqAd7qtrDVg9XKq+qk5HPqVuuViMuQ5gScu3Vd67xVf3UCa6nb61eK/vr5WorpTRldhsInTkfqzVtqG61WKWk3tXKV60dzAv68m4ZsY05uB1oVGj9u+juSg7tTYDTKFm5zsmUc2Hn1nl4B3TG1fP4lfLU54Z7Ovk2ObMT1jDv2OSmkteYEUKB/ZaYX0pV9qqGDX4GHhweuXspA9LsnkX4n71aUygu47s//3YVCX6czU19//nUDb42djJ4DhuD8BdMlzFRT+jUdWEbFkvjSe8rfQkMC8hyLOFUbPlYfM6eOVzvZt/UyQtrsxls992PEy/vV8r5tl9U6QAHj/+7tqJsDh47wAfplRC9Zhuxs285OETlRcGIISNf+WknBvhrSB1s3rgKNB8YcBeeT7uBi8h1Q2c/Xl58hBjDGyNRCMrOyMCd6Cdp17YVDR45a1FtTiBrbhBBw4toFa/nYXN+syRM4uPsb7Ipfj1nTJyFy5jTs2bIB//15H/Zv34SWwS2K9Z2UfBbd+4diyvtzYTQai7W9vzLxxpX7dzUrCyEg/swxzQIszBFjDI0bPobQAX3xSt8eoMsTYwx1awcibvVnWDzvA1Sp7F9Y01zd8i/WgL6wy1VYKYjKSQgBP6X8jst3Uq2kJK6698sv4sCub9C/V/diOzly9ESx9ebKK2mpoJzM+1puhRBAASacPU4bh4mfrw+iZ7+Hzeti1TGjsEBaPVuyDwa2/C4uF2EEiDplCwOyOF1wi6bYt+1rjBs9Ap6e5XJNu3bqgFdDeufuF1cQmYswAnZd+A/O3rxWXF661RHw4W8Nww/bN+OdUcOx+rOPsHzxfBgMBqsx0N0P5WLV0EYDYQTI/Ilo8oGvbQxLTLPAWjUQ8fYb6PDP1kXerhbsedKPcaBcCuq12hdGAAW44fRhnLpu3xMo+XGUHLx8BpSDyP6FEkCBT/hhI21cUqYctH4G25uYcAJ2nP8V+/5ItDdO3dvrFbdwAgi5QduX85nE21R0CbmecRtDd8bqEqsuBFy6cwPd4xchIydLl6Ts6YRi7MZjvcwfvuzxU9K2uhBAwRziT8d0JsgCpnTJvxZCsQ3YtkzYU29hMepGAHW+6cxRvHtgExWdUsbu34D4ZLHzWAUT15UA6nzuz99iID/K0rMzadcphC47/b/9BIuO7dI9Ht0JoAzXJf6ENhtmO3TCjuIgoYm2lutnYuPpI7SruziEAMryOH9n8My6GaCHHdp3hBy6kowWa2bgpAMfFh1GAAF+Je0mOsTNw5i96/AXf5lPOj3kRmYawvetR1t+FqYIentX0jwcSgAFmWXMweLju1E/diKWHN8DeqlPehFCvpee+A5BMRPU672Il+yljVtSgKulbSTCno7KUXvX4slVU7HZ2p2IDQF8lfQzGq+cgpHfr0GqgK82bAgJhL3E1ym2NBbVJvFGCnpt+Qg+Hw1XtzG//gBbvkj4gz/8LTu1V30AJF/9tn6MpFSnONbyoFOQIjGmpORpnKeUzp+a6Ux4ffcK1FgejmZrpqPv1qXqEfzh4QQQMVvPngQJlUlHRzfZkG3tz8ZixJ5VSDh7AuTLeTLLi4RBOSfxaXunJCAvTFPpxLWLiEv6BXQNn3pwE4iYbvELQUJl0lEd2ZCtqZVzrxXGzwCAHYJ7cQwCCjsuyUzeDveiOwIKFEXOkTdLGLPinAK43oS97pBp3KHCTmLcihRJdatgM9yL3gioVx6VAD4N6yZAZ/jNmKsEIGLFIUVRvtA5hjLbnYo1x5wAMBHASzJTpvOKu7zo/glEgDCWZWmauYtcAmgw5spPuRTxc6u1QYAtxNjPz5t95RHANbJH1lTO0G+86P4JQEBRcFrOxsz7XecjACPX3JIl1p0bivkLi/t7LmNlBcot2SB3xfiYfJ+H5CeAQBkdk8hH6BBOgky7brEfAf6clS0rrDdGrUgq6E0qqFD3I1Z8y7eTubh/WiCgYCTCY3YW5qpwArilHB4z2yizDnTq8F33zwYECDujjHYcy0+Kal4kAWqDiM/3yIw97R6YVTRKteKXnURZNrZARIzlf3R9n6fiCSBDGhNwpylnczwfF26Qyi1FI8BxSuU4TZSV200QsfJ00ZamGusEkF34xgx5TOxc2fvuI9z5bH5GZJDaLXkIECYc/LkylDr8kjMbHLO82qJLJSPA3H7E2hvc+UQZxiBOxDiu3s+ljP+U7zj44YQJP0jH8wfa1NIAUjoCzJ7DV17iRMwzjolpa/S6WxmyMpAHEcnfL8dxOczLLvGWzZxOcVtznSkn5QjPL46XIylnoyHT1zgmtr0cHhsNjonZtjTb/wMAAP//BZre/QAAAAZJREFUAwA/H/1Qwymp0AAAAABJRU5ErkJggg=="
     }
   ]
 }

@@ -85,6 +85,11 @@ export interface IListDef {
   titleDisplayName?: string;
   versioning?: boolean;
   security: SecurityProfile;
+  /**
+   * Keep the list out of SharePoint search. Settings stays in search (Teams finds the timesheet with it), and the lists
+   * the Copilot agent answers from stay in search too (permission-trimmed: people only find what they may read).
+   */
+  noCrawl?: boolean;
   fields: IFieldDef[];
 }
 
@@ -241,6 +246,7 @@ export const LISTS: IListDef[] = [
     description: 'Support requests sent to Brillienta.',
     titleDisplayName: 'Subject',
     security: 'shared',
+    noCrawl: true,
     fields: [
       { name: 'Details', title: 'Details', type: 'Note' },
       { name: 'Category', title: 'Category', type: 'Text' },
@@ -256,6 +262,7 @@ export const LISTS: IListDef[] = [
     description: 'In-app notifications (the bell).',
     titleDisplayName: 'Title',
     security: 'shared',
+    noCrawl: true,
     fields: [
       { name: 'Body', title: 'Message', type: 'Note' },
       { name: 'LinkPath', title: 'Link', type: 'Text' },
@@ -270,6 +277,7 @@ export const LISTS: IListDef[] = [
     description: 'Emails waiting to be sent by the Power Automate flow (when email is sent through Power Automate).',
     titleDisplayName: 'Subject',
     security: 'shared',
+    noCrawl: true,
     fields: [
       { name: 'MailTo', title: 'To', type: 'Note', description: 'Recipients, separated by semicolons.' },
       { name: 'MailBody', title: 'Body (HTML)', type: 'Note' },
@@ -286,6 +294,7 @@ export const LISTS: IListDef[] = [
     description: 'Who changed what: settings, projects, approvals.',
     titleDisplayName: 'Action',
     security: 'adminOnly',
+    noCrawl: true,
     fields: [
       { name: 'Details', title: 'Details', type: 'Note' },
       { name: 'ByName', title: 'By', type: 'Text' }
@@ -297,6 +306,7 @@ export const LISTS: IListDef[] = [
     description: 'Custom reports and dashboards.',
     titleDisplayName: 'Report',
     security: 'shared',
+    noCrawl: true,
     fields: [
       { name: 'OwnerEmail', title: 'Owner email', type: 'Text', indexed: true },
       { name: 'IsShared', title: 'Shared with everyone', type: 'Boolean', defaultValue: '0' },

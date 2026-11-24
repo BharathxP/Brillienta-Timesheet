@@ -42,7 +42,7 @@ export function CustomInput(props: { column: ICustomColumn; value: string | numb
     case 'number':
       return <TextField label={c.label} required={c.required} type="number" value={props.value === undefined ? '' : String(props.value)} onChange={(_, v) => props.onChange(v ? Number(v) : '')} />;
     case 'date':
-      return <TextField label={c.label} required={c.required} type="date" value={String(props.value || '')} onChange={(_, v) => props.onChange(v || '')} />;
+      return <DateField label={c.label} required={c.required} value={String(props.value || '')} onChange={(v) => props.onChange(v)} />;
     default:
       return <TextField label={c.label} required={c.required} value={String(props.value || '')} onChange={(_, v) => props.onChange(v || '')} />;
   }

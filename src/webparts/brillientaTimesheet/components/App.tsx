@@ -20,7 +20,7 @@ import { ILicenseStatus } from '../services/licensing/license';
 import { loadLicenseStatus } from '../services/licensing/LicenseLoader';
 import { Feature, applyPlan, planHas, restoreLocked, userLimit } from '../services/licensing/plans';
 import { canApprove, effectiveRole, reportsOf, sameEmail, securityMembers } from '../services/access';
-import { isShareablePage } from '../services/host';
+import { TEAMS_CHOICE_KEY, isShareablePage } from '../services/host';
 import { DEFAULT_LOGO } from '../assets/defaultLogo';
 import { Shell } from './Shell';
 import { SetupWizard } from './setup/SetupWizard';
@@ -365,12 +365,39 @@ export default function App(props: IAppProps): JSX.Element {
         <PrimaryButton text="Try again" onClick={() => setBoot((b) => b + 1)} />
       </div>
     );
+  } else if ((phase.kind === 'notInstalled' || phase.kind === 'setup') && host.inTeams && host.siteChoices && host.siteChoices.length) {
+    // Teams found several timesheets (SharePoint search) and none is marked as the one for Teams: the person picks.
+    const choose = (url: string): void => {
+      try {
+        window.localStorage.setItem(TEAMS_CHOICE_KEY, url);
+      } catch {
+        // private mode: the choice holds until reload only
+      }
+      window.location.reload();
+    };
+    body = (
+      <div className="ts-center">
+        <img className="ts-logo is-lg" src={DEFAULT_LOGO} alt="" />
+        <h2 style={{ margin: 0 }}>Choose your timesheet</h2>
+        <div className="ts-muted">More than one Brillienta Timesheet was found. Choose the one to open here; Teams remembers your choice on this device.</div>
+        <div className="ts-row" style={{ justifyContent: 'center' }}>
+          {host.siteChoices.map((d) => (
+            <PrimaryButton key={d.url} text={d.title} title={d.url} onClick={() => choose(d.url)} />
+          ))}
+        </div>
+      </div>
+    );
   } else if (phase.kind === 'notInstalled') {
     body = (
       <div className="ts-center">
         <img className="ts-logo is-lg" src={DEFAULT_LOGO} alt="" />
         <h2 style={{ margin: 0 }}>Brillienta Timesheet is not set up yet</h2>
-        <div className="ts-muted">{host.siteError || 'A site owner needs to open this page once to create the timesheet lists.'}</div>
+        <div className="ts-muted">
+          {host.siteError ||
+            (host.inTeams
+              ? 'No Brillienta Timesheet was found that you can open. Teams finds it by itself once you have access to its SharePoint site (a new timesheet can take a few hours to be found). Ask your timesheet administrator for access, or a team owner can enter the timesheet site address in this tab’s settings.'
+              : 'A site owner needs to open this page once to create the timesheet lists.')}
+        </div>
       </div>
     );
   } else if (phase.kind === 'upgrading') {

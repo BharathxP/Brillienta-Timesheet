@@ -88,9 +88,9 @@ export class Provisioner {
     const report: IListReport = { key: def.key, title, exists: true, created: false, missingFields: [], errors: [] };
     const listPath = this._sp.list(title);
     try {
-      let info: { EnableVersioning: boolean; ItemCount: number; ReadSecurity: number; WriteSecurity: number; Hidden?: boolean } | undefined;
+      let info: { EnableVersioning: boolean; ItemCount: number; ReadSecurity: number; WriteSecurity: number; Hidden?: boolean; NoCrawl?: boolean } | undefined;
       try {
-        info = await this._sp.get(`${listPath}?$select=Id,EnableVersioning,ItemCount,ReadSecurity,WriteSecurity,Hidden`);
+        info = await this._sp.get(`${listPath}?$select=Id,EnableVersioning,ItemCount,ReadSecurity,WriteSecurity,Hidden,NoCrawl`);
       } catch (e) {
         if (!(e instanceof SPError && e.status === 404)) throw e;
       }
@@ -105,12 +105,13 @@ export class Provisioner {
         await this._sp.post('web/lists', { Title: title, Description: def.description, BaseTemplate: 100, AllowContentTypes: false, ContentTypesEnabled: false });
         report.created = true;
         report.exists = true;
-        info = { EnableVersioning: false, ItemCount: 0, ReadSecurity: 1, WriteSecurity: 1, Hidden: false };
+        info = { EnableVersioning: false, ItemCount: 0, ReadSecurity: 1, WriteSecurity: 1, Hidden: false, NoCrawl: false };
         if (def.titleDisplayName) await this._sp.merge(`${listPath}/fields/getbyinternalnameortitle('Title')`, { Title: def.titleDisplayName });
       }
-      if (repair && (info.EnableVersioning !== !!def.versioning || info.Hidden !== true)) {
-        // Lists are hidden from Site contents: people use the app (and Power BI / Power Automate use the lists).
-        await this._sp.merge(listPath, { EnableVersioning: !!def.versioning, EnableAttachments: false, Hidden: true });
+      if (repair && (info.EnableVersioning !== !!def.versioning || info.Hidden !== true || !!info.NoCrawl !== !!def.noCrawl)) {
+        // Lists are hidden from Site contents (people use the app; Power BI and Power Automate use the lists), and
+        // operational lists are kept out of search.
+        await this._sp.merge(listPath, { EnableVersioning: !!def.versioning, EnableAttachments: false, Hidden: true, NoCrawl: !!def.noCrawl });
       }
       const existing = await this._sp.getAll<ISPField>(`${listPath}/fields?$select=InternalName,TypeAsString,Indexed,Choices&$top=500`);
       const byName: Record<string, ISPField> = {};

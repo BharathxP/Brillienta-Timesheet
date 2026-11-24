@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Renders the clock logo (assets/defaultLogo.ts) to the PNGs the package needs, with the preinstalled Chromium:
 //   sharepoint/images/app-icon.png (96×96, app catalog) and teams/<web part id>_color.png / _outline.png.
+// With --brand: docs/brand/ (logo SVG, 512 px PNG, badge SVG) only.
 const path = require('path');
 const fs = require('fs');
 const { chromium } = require('playwright');
@@ -25,6 +26,19 @@ const outline =
     await page.screenshot({ path: path.join(root, file), omitBackground: !!transparent });
     console.log('wrote', file);
   };
+  if (process.argv.includes('--brand')) {
+    // docs/brand: the logo for the website, listings and documents (the package icons are left as they are).
+    const dir = path.join(root, 'docs/brand');
+    fs.mkdirSync(dir, { recursive: true });
+    const logo = svg('#038f62', '#ffffff', '#17232e', '#caf578');
+    fs.writeFileSync(path.join(dir, 'brillienta-timesheet-logo.svg'), logo + '\n');
+    // The clock alone (navy hands, green crown), for places where a tile does not fit.
+    const badge = logo.replace(/<rect width="120" height="120" rx="28" fill="#038f62"\/>/, '').replace('fill="#ffffff"', 'fill="#ffffff" stroke="#038f62" stroke-width="6"').replace(/fill="#caf578"/g, 'fill="#038f62"');
+    fs.writeFileSync(path.join(dir, 'brillienta-timesheet-badge.svg'), badge + '\n');
+    await shot(logo, 512, 'docs/brand/brillienta-timesheet-logo-512.png', true);
+    await browser.close();
+    return;
+  }
   fs.mkdirSync(path.join(root, 'sharepoint/images'), { recursive: true });
   fs.mkdirSync(path.join(root, 'teams'), { recursive: true });
   await shot(svg('#038f62', '#ffffff', '#17232e', '#caf578'), 96, 'sharepoint/images/app-icon.png', true);

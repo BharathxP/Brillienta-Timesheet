@@ -7,7 +7,8 @@ import { DAY_NAMES } from '../../services/dates';
 import { download, formatDateTime, relativeTime } from '../../services/format';
 import { WEBHOOK_EVENTS } from '../../services/Notifier';
 import { flowPackageZip } from '../../services/flowPackage';
-import { copilotManifest, declarativeAgent, endpoints, pbids, teamsManifest } from '../../services/packages';
+import { copilotManifest, declarativeAgent, endpoints, pbids, teamsIconNames, teamsManifest } from '../../services/packages';
+import { WEB_PART_ID } from '../../services/product';
 import { zipFiles } from '../../services/zip';
 import { clockTileSvg } from '../../assets/defaultLogo';
 import { LogLevel, Provisioner, ISchemaReport } from '../../services/Provisioner';
@@ -21,7 +22,6 @@ import { Card, Kpi, Loading, Tabs, useBusy, useConfirm, useLoader } from '../com
 import { Gate, SaveBar, useDraft } from './AdminPage';
 import { KeyEntry, PlanCards } from './LicenseAdmin';
 
-const WEB_PART_ID = 'ff5b1593-a3b3-45f5-b3a5-8d11821fc2a1';
 
 /** Render an SVG to PNG bytes (Teams / Copilot package icons). */
 async function svgToPng(svg: string, size: number): Promise<Uint8Array> {
@@ -40,20 +40,15 @@ async function svgToPng(svg: string, size: number): Promise<Uint8Array> {
   return new Uint8Array(await blob.arrayBuffer());
 }
 
-async function appIcons(): Promise<Array<{ path: string; content: Uint8Array }>> {
+async function appIcons(id: string): Promise<Array<{ path: string; content: Uint8Array }>> {
+  const names = teamsIconNames(id);
   const outline = clockTileSvg('transparent', 'transparent', '#ffffff', '#ffffff').replace('fill="transparent"/><circle cx="60" cy="62" r="34" fill="transparent"', 'fill="transparent"/><circle cx="60" cy="62" r="34" fill="none" stroke="#ffffff" stroke-width="7"');
   return [
-    { path: 'color.png', content: await svgToPng(clockTileSvg(), 192) },
-    { path: 'outline.png', content: await svgToPng(outline, 32) }
+    { path: names.color, content: await svgToPng(clockTileSvg(), 192) },
+    { path: names.outline, content: await svgToPng(outline, 32) }
   ];
 }
 
-function guid(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (ch) => {
-    const r = Math.floor(Math.random() * 16);
-    return (ch === 'x' ? r : (r & 0x3) | 0x8).toString(16);
-  });
-}
 
 // ---------------------------------------------------------------------------------------------- notifications
 
@@ -188,7 +183,14 @@ type ITab = 'taskmanager' | 'timeoff' | 'teams' | 'planner' | 'copilot' | 'autom
 export function IntegrationsAdmin(): JSX.Element {
   const draft = useDraft();
   const { d, set } = draft;
-  const { has, timeOff, sp, prefix, appVersion, config, toast, notifier, taskManager, svc, ref, reloadRef } = useApp();
+  const { has, timeOff, sp, prefix, appVersion, config, toast, notifier, taskManager, svc, ref, reloadRef, settings } = useApp();
+  const [teamsDefault, setTeamsDefaultState] = React.useState(settings.get(SETTING_KEYS.teamsDefault) === '1');
+  const setTeamsDefault = (on: boolean): Promise<void> =>
+    run(async () => {
+      await settings.set(SETTING_KEYS.teamsDefault, on ? '1' : '0');
+      setTeamsDefaultState(on);
+      await svc.log('Teams site', on ? 'Use this site in Teams: on' : 'Use this site in Teams: off');
+    }, on ? 'Teams opens this timesheet.' : 'Saved.');
   const [tab, setTab] = React.useState<ITab>('taskmanager');
   const [tmTest, setTmTest] = React.useState<string[] | undefined>();
   const [busy, run] = useBusy();
@@ -196,16 +198,16 @@ export function IntegrationsAdmin(): JSX.Element {
   const to = d.timeOff;
   const tm = d.taskManager;
   const i = d.integrations;
-  const host = new URL(sp.webUrl).hostname;
   const copilotPkg = (): Promise<void> =>
     run(async () => {
-      const o = { siteUrl: sp.webUrl, orgName: config.orgName, appName: config.appName, prefix, appId: guid(), version: appVersion.split('.').slice(0, 3).join('.') };
-      const zip = zipFiles([{ path: 'manifest.json', content: JSON.stringify(copilotManifest(o), null, 2) }, { path: 'declarativeAgent.json', content: JSON.stringify(declarativeAgent(o), null, 2) }, ...(await appIcons())]);
+      const o = { siteUrl: sp.webUrl, orgName: config.orgName, appName: config.appName, prefix, version: appVersion.split('.').slice(0, 3).join('.') };
+      const manifest = copilotManifest(o);
+      const zip = zipFiles([{ path: 'manifest.json', content: JSON.stringify(manifest, null, 2) }, { path: 'declarativeAgent.json', content: JSON.stringify(declarativeAgent(o), null, 2) }, ...(await appIcons(String(manifest.id)))]);
       download('Brillienta-Timesheet-Copilot-agent.zip', zip, 'application/zip');
     });
   const teamsPkg = (): Promise<void> =>
     run(async () => {
-      const zip = zipFiles([{ path: 'manifest.json', content: JSON.stringify(teamsManifest({ appId: guid(), webPartId: WEB_PART_ID, version: appVersion.split('.').slice(0, 3).join('.'), tenantHost: host, appName: config.appName }), null, 2) }, ...(await appIcons())]);
+      const zip = zipFiles([{ path: 'manifest.json', content: JSON.stringify(teamsManifest(appVersion.split('.').slice(0, 3).join('.')), null, 2) }, ...(await appIcons(WEB_PART_ID))]);
       download('Brillienta-Timesheet-Teams-app.zip', zip, 'application/zip');
     });
   return (
@@ -329,16 +331,23 @@ export function IntegrationsAdmin(): JSX.Element {
           <Gate feature="teamsOutlook">
             <div className="ts-check-list">
               <div>
-                <strong>Teams app.</strong> In the SharePoint app catalog select the solution and choose <em>Sync to Teams</em>, or upload this package in Teams admin center › Manage apps. People get Timesheet as a personal app; teams can add it as a tab.
+                <strong>Teams app.</strong> The package includes its Teams app. In the SharePoint admin center open the tenant app catalog, select Brillienta Timesheet and select{' '}
+                <em>Sync to Teams</em>. It then appears in Teams under Apps › Built for your org as <strong>Brillienta Timesheet</strong>: a personal app, and a tab teams can add to a channel.
+              </div>
+              <div>
+                <strong>Finding this site from Teams.</strong> Teams opens the timesheet by itself: it finds the timesheet sites a person can open with SharePoint search (a new site can
+                take a few hours to be found). If your organisation has more than one, switch this on for the one Teams should open.
+              </div>
+              <div>
+                <Toggle label="Use this site in Teams" checked={teamsDefault} disabled={busy} onChange={(_, v) => void setTeamsDefault(!!v)} />
               </div>
               <div>
                 <DefaultButton iconProps={{ iconName: 'Download' }} text="Download the Teams app package" onClick={() => void teamsPkg()} disabled={busy} />
+                <span className="ts-muted ts-small"> For Teams admin center › Manage apps › Upload new app, when Sync to Teams is not used.</span>
               </div>
               <div>
-                <strong>Outlook email and Teams chat</strong> are switched on under Notifications &amp; email. They use the Mail.Send, Chat.Create and ChatMessage.Send permissions the package requests: approve them in the SharePoint admin center › Advanced › API access.
-              </div>
-              <div>
-                <strong>Teams tabs on another site:</strong> a tab finds the timesheet through the web part&apos;s &quot;Timesheet site address&quot; setting.
+                <strong>Outlook email and Teams chat</strong> are switched on under Notifications &amp; email. They use the Mail.Send, Chat.Create and ChatMessage.Send permissions the package requests:
+                approve them in the SharePoint admin center › Advanced › API access.
               </div>
             </div>
           </Gate>

@@ -21,7 +21,10 @@ export interface IRoute {
 
 export interface IHostInfo {
   inTeams: boolean;
-  siteSource: '' | 'property' | 'tenant';
+  /** '' = the host site, 'property' = the tab's setting, 'tenant' = the tenant property, 'found' = found with search (Teams). */
+  siteSource: '' | 'property' | 'tenant' | 'found';
+  /** Teams found several timesheets and none is the default: the person picks one (remembered in this browser). */
+  siteChoices?: Array<{ url: string; title: string }>;
   hostWebUrl: string;
   siteError?: string;
   openTeamsLink?: (url: string) => Promise<void>;

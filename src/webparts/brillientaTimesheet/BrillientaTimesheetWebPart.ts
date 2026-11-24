@@ -10,7 +10,7 @@ import { initializeIcons } from '@fluentui/react';
 import * as strings from 'BrillientaTimesheetWebPartStrings';
 import App, { IAppProps } from './components/App';
 import { LIST_PREFIX, listTitle } from './schema/schema';
-import { TENANT_SITE_KEY, normalizeSiteUrl, sameSite } from './services/host';
+import { ISearchRow, TEAMS_CHOICE_KEY, TEAMS_DEFAULT_SETTING, TENANT_SITE_KEY, normalizeSiteUrl, pickSite, sameSite, settingsSearchQuery, sitesFromSearch } from './services/host';
 
 export interface IBrillientaTimesheetWebPartProps {
   /** Site that holds the timesheet lists when it is not the site the web part runs on (Teams tabs). */
@@ -22,7 +22,9 @@ interface ITimesheetWeb {
   title: string;
   manageLists: boolean;
   manageWeb: boolean;
-  source: '' | 'property' | 'tenant';
+  source: '' | 'property' | 'tenant' | 'found';
+  /** Teams found several timesheets: the person picks one. */
+  choices?: Array<{ url: string; title: string }>;
   error?: string;
 }
 
@@ -77,6 +79,7 @@ export default class BrillientaTimesheetWebPart extends BaseClientSideWebPart<IB
         siteSource: web.source,
         hostWebUrl: host,
         siteError: web.error,
+        siteChoices: web.choices,
         openTeamsLink: teams ? (url: string) => teams.teamsJs.app.openLink(url) : undefined
       }
     };
@@ -121,7 +124,70 @@ export default class BrillientaTimesheetWebPart extends BaseClientSideWebPart<IB
     }
   }
 
-  /** The timesheet site: the web part setting, else (in Teams) the tenant-wide timesheet site, else the host site. */
+  /** This browser's pick among several timesheets (Teams). */
+  private _remembered(): string {
+    try {
+      return window.localStorage.getItem(TEAMS_CHOICE_KEY) || '';
+    } catch {
+      return '';
+    }
+  }
+
+  /**
+   * Teams with nothing set up: timesheets the person can open, found with SharePoint search (the Settings list is kept
+   * in search). One → that one; several → this browser's pick, else the one marked "Use this site in Teams", else the
+   * person chooses. Search can take a few hours to list a new timesheet.
+   */
+  private async _findTimesheet(): Promise<{ url: string } | { choose: Array<{ url: string; title: string }> } | undefined> {
+    const host = this.context.pageContext.web.absoluteUrl;
+    const origin = this._origin();
+    const settings = listTitle(this._prefix(), 'settings');
+    const remembered = normalizeSiteUrl(this._remembered(), origin);
+    if (remembered && (await this._hasTimesheet(remembered))) return { url: remembered };
+    let sites: string[] = [];
+    try {
+      const q = encodeURIComponent(`'${settingsSearchQuery(settings)}'`);
+      const r = await this._getJson<{ PrimaryQueryResult?: { RelevantResults?: { Table?: { Rows?: ISearchRow[] } } } }>(
+        `${host}/_api/search/query?querytext=${q}&selectproperties='Title,Path,SPWebUrl'&rowlimit=50&trimduplicates=false`
+      );
+      const rows = (r.PrimaryQueryResult && r.PrimaryQueryResult.RelevantResults && r.PrimaryQueryResult.RelevantResults.Table && r.PrimaryQueryResult.RelevantResults.Table.Rows) || [];
+      sites = sitesFromSearch(rows, settings, origin).slice(0, 10);
+    } catch {
+      return undefined;
+    }
+    const title = settings.replace(/'/g, "''");
+    const found = (
+      await Promise.all(
+        sites.map(async (url) => {
+          try {
+            const r = await this._getJson<{ value: Array<{ SettingValue: string | null }> }>(
+              `${url}/_api/web/lists/getByTitle('${encodeURIComponent(title)}')/items?$select=SettingValue&$filter=Title eq '${TEAMS_DEFAULT_SETTING}'&$top=1`
+            );
+            return { url, marked: !!r.value && !!r.value[0] && r.value[0].SettingValue === '1' };
+          } catch {
+            return undefined; // not readable, or not a timesheet after all
+          }
+        })
+      )
+    ).filter((f): f is { url: string; marked: boolean } => !!f);
+    const pick = pickSite(found, remembered);
+    if (!pick || 'url' in pick) return pick;
+    const choose = await Promise.all(
+      pick.choose.map(async (url) => {
+        try {
+          return { url, title: (await this._getJson<{ Title: string }>(`${url}/_api/web?$select=Title`)).Title || url };
+        } catch {
+          return { url, title: url };
+        }
+      })
+    );
+    return { choose };
+  }
+
+  /**
+   * The timesheet site: the web part setting, else (in Teams, when the host site has none) the tenant-wide timesheet
+   * site, else one found with SharePoint search; otherwise the host site.
+   */
   private async _resolveWeb(): Promise<ITimesheetWeb> {
     const pc = this.context.pageContext.web;
     const host: ITimesheetWeb = { url: pc.absoluteUrl, title: pc.title, manageLists: false, manageWeb: false, source: '' };
@@ -135,6 +201,12 @@ export default class BrillientaTimesheetWebPart extends BaseClientSideWebPart<IB
     } else if (this._inTeams && !(await this._hasTimesheet(pc.absoluteUrl))) {
       url = await this._tenantSite();
       source = 'tenant';
+      if (!url) {
+        const found = await this._findTimesheet();
+        if (found && 'choose' in found) return { ...host, choices: found.choose };
+        url = found ? found.url : '';
+        source = 'found';
+      }
     }
     if (!url || sameSite(url, pc.absoluteUrl)) return host;
     try {

@@ -1,0 +1,439 @@
+<title>Brillienta Timesheet Product Guide</title>
+<meta name="description" content="Product guide and walkthrough for Brillienta Timesheet, version 1.0.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Manrope:wght@600;700;800&display=swap">
+<style>
+/* Layout: a document column (prose ~68ch, screenshots full column) with a sticky contents rail on wide screens.
+   Visual language borrowed from the product: navy ink, lime highlight used sparingly, logo green for accents. */
+:root {
+  --paper: #ffffff;
+  --mist: #f4f7f5;
+  --ink: #17232e;
+  --muted: #5b6871;
+  --line: #dfe5e6;
+  --green: #03805a;
+  --lime: #caf578;
+  --lime-soft: #eef6dd;
+  --note: #fdf8e7;
+  --note-line: #efd98a;
+  --cover: #17232e;
+  --cover-ink: #f3f7f4;
+  --cover-muted: #b3c0c6;
+  --shadow: 0 1px 2px rgba(23, 35, 46, 0.05), 0 12px 32px rgba(23, 35, 46, 0.07);
+  --display: 'Manrope', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  --body: 'DM Sans', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono: ui-monospace, 'Cascadia Mono', Consolas, 'Liberation Mono', monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper: #0f171d;
+    --mist: #16212a;
+    --ink: #e7eef0;
+    --muted: #9aa8b0;
+    --line: #2a3843;
+    --green: #4cc79b;
+    --lime: #caf578;
+    --lime-soft: #23331f;
+    --note: #2b2716;
+    --note-line: #6b5a1d;
+    --cover: #0a1116;
+    --cover-ink: #f3f7f4;
+    --cover-muted: #9fb0b8;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.35);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #0f171d;
+  --mist: #16212a;
+  --ink: #e7eef0;
+  --muted: #9aa8b0;
+  --line: #2a3843;
+  --green: #4cc79b;
+  --lime: #caf578;
+  --lime-soft: #23331f;
+  --note: #2b2716;
+  --note-line: #6b5a1d;
+  --cover: #0a1116;
+  --cover-ink: #f3f7f4;
+  --cover-muted: #9fb0b8;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 16px/1.65 var(--body);
+  -webkit-font-smoothing: antialiased;
+  padding-inline: 20px;
+}
+h1, h2, h3, h4 { font-family: var(--display); line-height: 1.2; text-wrap: balance; margin: 0; letter-spacing: -0.02em; }
+p { margin: 0; }
+a { color: inherit; text-decoration-color: var(--line); text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--ink); }
+a:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; border-radius: 3px; }
+strong { font-weight: 600; }
+code { font: 0.86em var(--mono); background: var(--mist); border: 1px solid var(--line); border-radius: 5px; padding: 0 5px; }
+
+.page { max-width: 1180px; margin-inline: auto; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 56px; padding-block: 28px 80px; }
+.rail { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; font-size: 13.5px; }
+.rail p { font: 700 11px var(--body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.rail ol { list-style: none; padding: 0; margin: 0; display: grid; gap: 2px; }
+.rail a { display: block; padding: 5px 10px; border-radius: 7px; text-decoration: none; color: var(--muted); }
+.rail a:hover { background: var(--mist); color: var(--ink); }
+.rail .sub a { padding-left: 22px; font-size: 13px; }
+main { min-width: 0; display: grid; gap: 72px; }
+
+/* Cover */
+.cover { background: var(--cover); color: var(--cover-ink); border-radius: 16px; padding: 44px 48px 40px; display: grid; gap: 28px; position: relative; overflow: hidden; }
+.cover::after { content: ''; position: absolute; right: -80px; top: -80px; width: 320px; height: 320px; border-radius: 50%; background: radial-gradient(circle, rgba(202, 245, 120, 0.22), rgba(202, 245, 120, 0) 70%); pointer-events: none; }
+.brand { display: flex; align-items: center; gap: 12px; font: 700 20px var(--display); letter-spacing: -0.02em; }
+.brand svg { width: 34px; height: auto; }
+.cover h1 { font-size: clamp(34px, 5vw, 52px); font-weight: 800; letter-spacing: -0.035em; max-width: 16ch; }
+.cover h1 em { font-style: normal; background: linear-gradient(transparent 68%, rgba(202, 245, 120, 0.55) 68%); }
+.cover .lede { color: var(--cover-muted); font-size: 18px; max-width: 60ch; }
+.cover dl { display: flex; flex-wrap: wrap; gap: 14px 40px; margin: 0; padding-top: 22px; border-top: 1px solid rgba(255, 255, 255, 0.12); font-size: 14px; }
+.cover dt { color: var(--cover-muted); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+.cover dd { margin: 2px 0 0; font-weight: 600; }
+
+/* Parts and sections */
+.part { display: grid; gap: 40px; }
+.part-head { display: grid; gap: 12px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+.eyebrow { font: 700 12px var(--body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--green); }
+.part-head h2 { font-size: clamp(28px, 3.4vw, 38px); font-weight: 800; }
+.part-head p.intro { color: var(--muted); font-size: 17.5px; max-width: 66ch; }
+.prose { display: grid; gap: 14px; max-width: 70ch; }
+.prose h3 { font-size: 22px; margin-top: 10px; }
+
+.feature { display: grid; gap: 18px; scroll-margin-top: 24px; }
+.feature-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; }
+.feature-head h3 { font-size: 25px; font-weight: 800; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0; margin: 0; }
+.tags li { font-size: 12.5px; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.tags li.plan { background: var(--lime-soft); border-color: transparent; color: var(--ink); }
+.feature > p { max-width: 70ch; }
+.how { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 36px; }
+.how h4 { font: 700 12px var(--body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); grid-column: 1 / -1; }
+.how ul { margin: 0; padding-left: 18px; display: grid; gap: 7px; }
+.how li::marker { color: var(--green); }
+
+figure { margin: 0; display: grid; gap: 10px; }
+.shot { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); background: #fff; }
+.shot img { display: block; width: 100%; height: auto; }
+figcaption { font-size: 13.5px; color: var(--muted); max-width: 80ch; }
+figcaption b { color: var(--ink); font-weight: 600; }
+.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; align-items: start; }
+.phones { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; }
+.phone { width: min(300px, 100%); border-radius: 28px; border: 8px solid var(--ink); overflow: hidden; box-shadow: var(--shadow); background: #fff; }
+.phone-crop { aspect-ratio: 400 / 860; overflow: hidden; }
+.phone-crop img { display: block; width: 125%; max-width: none; height: auto; }
+
+.note { background: var(--note); border: 1px solid var(--note-line); border-radius: 10px; padding: 14px 18px; font-size: 15px; max-width: 76ch; }
+.note strong { display: block; margin-bottom: 2px; }
+
+/* Facts strip */
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.facts div { padding: 18px 20px; border-right: 1px solid var(--line); display: grid; gap: 2px; }
+.facts div:last-child { border-right: 0; }
+.facts b { font: 800 30px var(--display); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.facts span { font-size: 13.5px; color: var(--muted); }
+
+/* Advantages */
+.adv { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 28px 36px; }
+.adv div { display: grid; gap: 6px; align-content: start; padding-top: 14px; border-top: 2px solid var(--ink); }
+.adv h4 { font-size: 17px; }
+.adv p { color: var(--muted); font-size: 15px; }
+
+/* Architecture diagram */
+.arch { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.2fr); gap: 14px; align-items: center; }
+.arch .box { border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; display: grid; gap: 6px; background: var(--paper); }
+.arch .box h4 { font-size: 16px; }
+.arch .box p { font-size: 14px; color: var(--muted); }
+.arch .box.main { border-color: var(--ink); border-width: 2px; }
+.arch .stack { display: grid; gap: 14px; }
+.arch .arrow { font: 600 12px var(--body); color: var(--muted); text-align: center; display: grid; gap: 4px; justify-items: center; }
+.arch .arrow svg { width: 56px; height: 14px; }
+.tenant { border: 1.5px dashed var(--green); border-radius: 16px; padding: 18px; display: grid; gap: 12px; }
+.tenant > span { font: 700 12px var(--body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--green); }
+
+/* Tables */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+thead th { background: var(--mist); font-size: 12.5px; font-weight: 700; letter-spacing: 0.04em; color: var(--muted); white-space: nowrap; }
+tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+tbody th { font-weight: 600; }
+td.c, th.c { text-align: center; }
+.yes { color: var(--green); font-weight: 700; }
+.own { color: var(--ink); font-weight: 600; }
+.no { color: var(--muted); }
+.legend { font-size: 13px; color: var(--muted); }
+
+.steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; max-width: 76ch; }
+.steps li { counter-increment: s; display: grid; grid-template-columns: 34px 1fr; gap: 14px; align-items: start; }
+.steps li::before { content: counter(s); font: 800 15px var(--display); width: 30px; height: 30px; border-radius: 50%; background: var(--ink); color: var(--paper); display: grid; place-items: center; }
+.steps li p { color: var(--muted); font-size: 15px; }
+
+.plain { margin: 0; padding-left: 20px; display: grid; gap: 8px; max-width: 76ch; }
+.plain li::marker { color: var(--green); }
+
+footer { color: var(--muted); font-size: 13.5px; border-top: 1px solid var(--line); padding-top: 20px; display: grid; gap: 6px; }
+
+@media (max-width: 1000px) {
+  .page { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .rail { display: none; }
+}
+@media (max-width: 700px) {
+  body { font-size: 15.5px; padding-inline: 16px; }
+  .cover { padding: 30px 24px; }
+  .arch { grid-template-columns: minmax(0, 1fr); }
+  .arch .arrow svg { transform: rotate(90deg); }
+  .facts div { border-right: 0; border-bottom: 1px solid var(--line); }
+  main { gap: 56px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+@media print {
+  @page { size: A4; margin: 14mm 13mm; }
+  :root { color-scheme: light; }
+  body { font-size: 10.5pt; padding-inline: 0; background: #fff; }
+  .page { display: block; padding: 0; max-width: none; }
+  .rail { display: none; }
+  main { gap: 26pt; }
+  .cover { break-after: page; min-height: 250mm; align-content: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .part { break-before: page; gap: 22pt; }
+  .feature, figure, .table-wrap, .adv div, .steps li, .note, .arch { break-inside: avoid; }
+  .feature-head { break-after: avoid; }
+  .shot, .phone { box-shadow: none; }
+  .tags li.plan, thead th, .facts, .note, .phone { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  a { text-decoration: none; }
+}
+</style>
+
+<div class="page">
+<nav class="rail" aria-label="Contents">
+  <p>Contents</p>
+  <ol>
+    <li><a href="#overview">1. Overview</a></li>
+    <li><a href="#walkthrough">2. Feature walkthrough</a></li>
+    <li class="sub"><a href="#home">Overview</a></li>
+    <li class="sub"><a href="#week">My timesheet</a></li>
+    <li class="sub"><a href="#history">My timesheets</a></li>
+    <li class="sub"><a href="#tasks">My tasks</a></li>
+    <li class="sub"><a href="#approvals">Approvals</a></li>
+    <li class="sub"><a href="#projects">Projects and programmes</a></li>
+    <li class="sub"><a href="#activities">Activities</a></li>
+    <li class="sub"><a href="#people">People and rates</a></li>
+    <li class="sub"><a href="#reports">Reports</a></li>
+    <li class="sub"><a href="#dashboards">Dashboards</a></li>
+    <li><a href="#admin">3. Administration</a></li>
+    <li><a href="#integrations">4. Integrations</a></li>
+    <li><a href="#security">5. Roles &amp; security</a></li>
+    <li><a href="#plans">6. Plans &amp; licensing</a></li>
+    <li><a href="#deploy">7. Deployment</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<header class="cover">
+  <div class="brand">
+    <svg viewBox="0 0 120 120" aria-hidden="true"><rect width="120" height="120" rx="28" fill="#038f62"/><circle cx="60" cy="62" r="34" fill="#fff"/><rect x="54" y="16" width="12" height="10" rx="3" fill="#caf578"/><path d="M60 62 V40 M60 62 L76 72" stroke="#17232e" stroke-width="7" stroke-linecap="round"/><circle cx="60" cy="62" r="6" fill="#caf578" stroke="#17232e" stroke-width="3"/></svg>
+    Brillienta Timesheet
+  </div>
+  <h1>Time tracking that lives in <em>your Microsoft 365</em></h1>
+  <p class="lede">A product guide and walkthrough: what every feature does, who can use it, how your data is protected, and how to deploy it.</p>
+  <dl>
+    <div><dt>Product</dt><dd>Brillienta Timesheet</dd></div>
+    <div><dt>Version</dt><dd>1.0.0</dd></div>
+    <div><dt>Platform</dt><dd>SharePoint Online · Microsoft Teams · SharePoint Framework</dd></div>
+    <div><dt>Edition of this guide</dt><dd>November 2026</dd></div>
+  </dl>
+</header>
+
+<section class="part" id="overview">
+  <div class="part-head"><p class="eyebrow">Part 1</p><h2>Overview</h2></div>
+  <div class="prose">
+    <p>Brillienta Timesheet is a weekly timesheet, approval and project cost app that runs inside SharePoint Online and Microsoft Teams. People fill in their week against projects, tasks and activities; managers approve; admins and project managers see hours, billable share, cost and margin by project, person and period.</p>
+    <p>All data is stored in SharePoint lists on your own site (named <code>BrillTS_…</code>), protected by SharePoint permissions. Brillienta runs no server and receives no timesheet data.</p>
+  </div>
+  <div class="note"><strong>About the screens in this guide</strong>Every screenshot comes from version 1.0.0 running with the built-in sample organisation (“Contoso”). All people, names, email addresses and figures shown are fictional.</div>
+</section>
+
+<section class="part" id="walkthrough">
+  <div class="part-head"><p class="eyebrow">Part 2</p><h2>Feature walkthrough</h2></div>
+  <article class="feature" id="home">
+    <div class="feature-head"><h3>Overview</h3><ul class="tags"><li>Everyone</li><li class="plan">All plans</li></ul></div>
+    <p>The start page shows the current week against its target, hours this month and how much of it was billable, weeks that need attention (drafts, sent back), timesheets waiting for your approval, your tasks and your projects with their end dates and planned hours.</p>
+    <figure>
+      <div class="shot"><img src="shots/home.png" alt="Overview page with the week ring, hours this month, billable share, weeks to fix, timesheets to approve and where time went this month." width="1366" height="860"></div>
+      <figcaption><b>Overview.</b> “Fill in this week” opens the timesheet; “to approve” opens Approvals.</figcaption>
+    </figure>
+  </article>
+
+  <article class="feature" id="week">
+    <div class="feature-head"><h3>My timesheet</h3><ul class="tags"><li>Everyone</li><li class="plan">All plans</li></ul></div>
+    <p>One line per project, task and activity, with hours per day, a billable flag, a ticket number and notes per day. Type <code>7.5</code>, <code>7:30</code> or <code>45m</code>; Ctrl+S saves. Clone an earlier week to start from it. The header shows the limits that apply to you, and the target is reduced by public holidays. Submitting checks the daily and weekly limits and the required fields before the week goes to approval; with role-based auto-approval it is approved at once.</p>
+    <figure>
+      <div class="shot"><img src="shots/week.png" alt="Weekly timesheet with four lines on three client projects and an internal line, hours on Monday and Tuesday, ticket numbers and billable flags." width="1366" height="860"></div>
+      <figcaption><b>A week in progress.</b> Totals, target, billable and non-billable hours update as you type.</figcaption>
+    </figure>
+  </article>
+
+  <article class="feature" id="history">
+    <div class="feature-head"><h3>My timesheets</h3><ul class="tags"><li>Everyone</li><li class="plan">All plans</li></ul></div>
+    <p>Every week with its status (draft, waiting, sent back, approved, not started), hours, billable hours and who approved it, with Excel export.</p>
+    <figure>
+      <div class="shot"><img src="shots/history.png" alt="List of weeks with status, hours, billable hours, submitted date and approver." width="1366" height="860"></div>
+      <figcaption><b>My timesheets.</b> Weeks not started are listed too, so nothing is missed.</figcaption>
+    </figure>
+  </article>
+
+  <article class="feature" id="tasks">
+    <div class="feature-head"><h3>My tasks</h3><ul class="tags"><li>Everyone</li><li class="plan">All plans</li></ul></div>
+    <p>Tasks assigned to you, and open tasks on your projects that you can take on yourself (self-assign). Logging time on a task links the hours to it.</p>
+    <figure>
+      <div class="shot"><img src="shots/tasks.png" alt="My tasks page with Assigned to me and Open to take tabs." width="1366" height="860"></div>
+      <figcaption><b>My tasks.</b></figcaption>
+    </figure>
+  </article>
+
+  <article class="feature" id="approvals">
+    <div class="feature-head"><h3>Approvals</h3><ul class="tags"><li>Managers · project managers</li><li class="plan">All plans</li></ul></div>
+    <p>Weeks waiting for you as manager, project manager or programme manager (administrators can approve every week). The checks column flags weeks below the target or over a limit. Approve or send back one week from its panel, or several at once; decided weeks can be reopened with a reason. Approved hours are written back to Brillienta Task Manager when that integration is on.</p>
+    <figure>
+      <div class="shot"><img src="shots/approvals.png" alt="Approvals list with five waiting weeks, hours, billable hours, checks and submitted dates." width="1366" height="860"></div>
+      <figcaption><b>Approvals.</b> Select several weeks to approve them together.</figcaption>
+    </figure>
+  </article>
+
+  <article class="feature" id="projects">
+    <div class="feature-head"><h3>Projects and programmes</h3><ul class="tags"><li>Admins · project managers</li><li class="plan">All plans · end dates and planned hours on Enterprise</li></ul></div>
+    <p>Projects with client, code, colour, managers, members, billable default, hourly cost and bill rate, custom columns, planned hours and end dates. The list shows hours logged against plan and projects ending soon; managers get notified before an end date and when a project goes over plan. Programmes group projects under programme managers. Bulk create adds many projects, tasks or activities from a pasted table.</p>
+    <figure>
+      <div class="shot"><img src="shots/projects.png" alt="Projects list with active projects, ending soon, over planned hours, clients and logged against planned hours bars." width="1366" height="860"></div>
+      <figcaption><b>Projects.</b></figcaption>
+    </figure>
+    <figure>
+      <div class="shot"><img src="shots/programs.png" alt="Programmes page with one programme and its projects." width="1366" height="860"></div>
+      <figcaption><b>Programmes.</b></figcaption>
+    </figure>
+  </article>
+
+  <article class="feature" id="activities">
+    <div class="feature-head"><h3>Activities</h3><ul class="tags"><li>Admins</li><li class="plan">Pro</li></ul></div>
+    <p>Kinds of work (development, meetings, travel…) with their default billable setting. Admins can require an activity on every line. The Time off activity is used for leave from Time off Manager.</p>
+    <figure>
+      <div class="shot"><img src="shots/activities.png" alt="Activities list with colours, billable defaults and active switches." width="1366" height="860"></div>
+      <figcaption><b>Activities.</b></figcaption>
+    </figure>
+  </article>
+
+  <article class="feature" id="people">
+    <div class="feature-head"><h3>People and rates</h3><ul class="tags"><li>Admins</li><li class="plan">All plans</li></ul></div>
+    <p>Everyone who logs time: role (Admin, Programme Manager, Project Manager, Team Manager, Member), manager, department, hourly cost and bill rate, and per-person working days. External (guest) users can be invited from here. The licence’s user count is shown at the top.</p>
+    <figure>
+      <div class="shot"><img src="shots/people.png" alt="People and rates list with roles, managers, departments, hourly cost and bill rate." width="1366" height="860"></div>
+      <figcaption><b>People &amp; rates.</b></figcaption>
+    </figure>
+  </article>
+
+  <article class="feature" id="reports">
+    <div class="feature-head"><h3>Reports</h3><ul class="tags"><li>Managers · admins</li><li class="plan">All plans · custom reports on Enterprise</li></ul></div>
+    <p>Project, my team, billable and non-billable, cost and margin, and utilisation reports for any period, filtered by projects, people, billable and timesheet status, with Excel and CSV export. Custom reports save your own grouping and columns.</p>
+    <figure>
+      <div class="shot"><img src="shots/reports.png" alt="Project report for this month with hours, billable, non-billable, cost and billable amount, and hours by project." width="1366" height="860"></div>
+      <figcaption><b>Reports.</b> Costs and amounts use the rates in force when each week was approved.</figcaption>
+    </figure>
+  </article>
+
+  <article class="feature" id="dashboards">
+    <div class="feature-head"><h3>Dashboards</h3><ul class="tags"><li>Managers · admins</li><li class="plan">Enterprise</li></ul></div>
+    <p>Charts of hours by project, activity and person, billable against non-billable, and trends. Start from the built-in dashboard, change it and save it as yours.</p>
+    <figure>
+      <div class="shot"><img src="shots/dashboards.png" alt="Dashboard with hours by project, a billable donut and hours by activity." width="1366" height="860"></div>
+      <figcaption><b>Dashboards.</b></figcaption>
+    </figure>
+  </article>
+
+</section>
+
+<section class="part" id="admin">
+  <div class="part-head"><p class="eyebrow">Part 3</p><h2>Administration</h2></div>
+  <div class="prose">
+    <p>Admin holds the settings for everyone: organisation name, logo and colour; currency; tracking days, the first day of the week and public holidays; daily and weekly hour limits and rules by role, department or external user; auto-approval by role; costs and rates; custom columns on timesheet lines and projects; notifications, reminders and email templates; integrations; the licence; and schema &amp; security, which checks and repairs the lists and keeps the <code>BrillTS</code> SharePoint groups in step with the roles. Every change is written to the audit log.</p>
+  </div>
+    <figure>
+      <div class="shot"><img src="shots/admin.png" alt="Admin, General and branding: organisation name, app name, currency, brand colour, logo and additional administrators." width="1366" height="860"></div>
+      <figcaption><b>Admin › General &amp; branding.</b></figcaption>
+    </figure>
+</section>
+
+<section class="part" id="integrations">
+  <div class="part-head"><p class="eyebrow">Part 4</p><h2>Integrations</h2></div>
+  <div class="prose">
+    <ul>
+      <li><b>Microsoft Teams.</b> A SharePoint admin selects the app in the tenant app catalog and selects <i>Sync to Teams</i>; it then appears in Teams under Apps › Built for your org as Brillienta Timesheet, as a personal app and a channel tab. Teams finds the timesheet site by itself with SharePoint search; with several sites, the one marked <i>Use this site in Teams</i> opens.</li>
+      <li><b>Teams and Outlook notifications</b>: submitted, approved, sent back, reminders and project alerts, by email or Teams chat, or through a Power Automate flow from a shared mailbox.</li>
+      <li><b>Microsoft Planner</b>: bring plans and tasks in as projects and tasks.</li>
+      <li><b>Microsoft 365 Copilot</b>: download a declarative agent that answers questions about your timesheets from the SharePoint lists.</li>
+      <li><b>Time off Manager 365</b>: approved leave fills in timesheets automatically.</li>
+      <li><b>Brillienta Task Manager</b>: projects and tasks are synchronised, time logged there can be imported, and approved hours are written back.</li>
+      <li><b>Power Automate, Power BI and the SharePoint REST API</b>: every list can be read by flows, reports and your own code; a webhook sends events to a flow.</li>
+    </ul>
+  </div>
+    <figure>
+      <div class="shot"><img src="shots/admin-integrations.png" alt="Admin, Integrations, Brillienta Task Manager settings." width="1366" height="860"></div>
+      <figcaption><b>Admin › Integrations.</b></figcaption>
+    </figure>
+</section>
+
+<section class="part" id="security">
+  <div class="part-head"><p class="eyebrow">Part 5</p><h2>Roles &amp; security</h2></div>
+  <div class="prose">
+    <p>Five roles: <b>Admin</b>, <b>Programme Manager</b>, <b>Project Manager</b>, <b>Team Manager</b> and <b>Member</b>. Members see their own timesheets; team managers the weeks of their people; project and programme managers the time on their projects; admins everything. Timesheets and entries use item-level permissions, so other people’s weeks are not readable even through SharePoint itself. The app keeps the SharePoint groups <code>BrillTS Administrators</code>, <code>BrillTS Approvers</code> and <code>BrillTS External users</code> in step with the roles. Operational lists (audit, notifications, email queue, tickets, saved reports) are kept out of search.</p>
+  </div>
+</section>
+
+<section class="part" id="plans">
+  <div class="part-head"><p class="eyebrow">Part 6</p><h2>Plans &amp; licensing</h2></div>
+  <div class="prose">
+    <p>Every installation starts with a <b>14-day trial of every feature</b>. After that, a licence key from Brillienta (entered under Admin › Licence &amp; plan) selects the plan:</p>
+    <ul>
+      <li><b>Standard</b> (10 users): weekly timesheets with approvals, cloning, project and team reports, billable tracking, hourly costs, four roles, bulk creation, custom columns, self-assigned tasks, Excel and CSV export.</li>
+      <li><b>Pro</b> (30 users, extra users available): adds per-project bill rates, the Programme Manager role, role-based auto-approval, hour limits, reminders, activities and tracking days. External users as an option.</li>
+      <li><b>Enterprise</b> (30 users, extra users available): adds holidays and per-person days, Time off Manager, Task Manager, Teams and Outlook, Planner, Copilot, project end dates and planned hours, rule-based limits, custom reports and dashboards, email templates, external users, Power Automate, API, Power BI and a dedicated account manager.</li>
+    </ul>
+  </div>
+    <figure>
+      <div class="shot"><img src="shots/licence.png" alt="Admin, Licence and plan: status Enterprise, users 8 of 30, and the three plan cards." width="1366" height="860"></div>
+      <figcaption><b>Admin › Licence &amp; plan.</b></figcaption>
+    </figure>
+</section>
+
+<section class="part" id="deploy">
+  <div class="part-head"><p class="eyebrow">Part 7</p><h2>Deployment</h2></div>
+  <div class="prose">
+    <ol>
+      <li>Upload <code>Brillienta-Timesheet.sppkg</code> to the tenant app catalog and deploy it to all sites.</li>
+      <li>In the SharePoint admin center › API access, approve the Microsoft Graph permissions you want (all optional).</li>
+      <li>Add the Brillienta Timesheet web part to a page on the site that will hold the data. The first administrator to open it runs the setup, which creates the lists and groups.</li>
+      <li>Optional: select <i>Sync to Teams</i> in the app catalog to add it to Teams.</li>
+    </ol>
+    <p>Help: <a href="https://kb.brillienta.com/timesheet/">kb.brillienta.com/timesheet</a> · Contact: <a href="https://brillienta.com/contact">brillienta.com/contact</a> · support@brillienta.com</p>
+  </div>
+    <figure>
+      <div class="shot"><img src="shots/support.png" alt="Support page with a new ticket form, account manager and contact details." width="1366" height="860"></div>
+      <figcaption><b>Support.</b> Tickets go to Brillienta support by email.</figcaption>
+    </figure>
+</section>
+
+<footer>
+  <span>Brillienta Timesheet · Product guide for version 1.0.0 · November 2026</span>
+  <span>Microsoft 365, SharePoint, Microsoft Teams, Microsoft Planner, Microsoft Copilot, Power Automate, Power BI and Outlook are trademarks of the Microsoft group of companies. Brillienta Timesheet is not a Microsoft product.</span>
+</footer>
+
+</main>
+</div>

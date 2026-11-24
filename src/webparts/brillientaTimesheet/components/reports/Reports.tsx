@@ -7,7 +7,7 @@ import { PERIODS, formatDay, periodRange, today, weekDays, weeksIn } from '../..
 import { managedProjects, reportsOf, sameEmail } from '../../services/access';
 import { isTrackingDay } from '../../services/rules';
 import { hours, money, percent } from '../../services/format';
-import { Card, ErrorBox, Kpi, Loading, Locked, PageHeader, Tabs, useBusy, useConfirm, useLoader } from '../common/Ui';
+import { Card, DateField, ErrorBox, Kpi, Loading, Locked, PageHeader, Tabs, useBusy, useConfirm, useLoader } from '../common/Ui';
 import { useFacts } from './useFacts';
 import { ReportView } from './ReportView';
 import { BarList } from '../common/Charts';
@@ -49,8 +49,8 @@ export function FilterBar(props: { filter: IReportFilter; period: string; onChan
           props.onChange(k ? { ...f, ...periodRange(k, today(), config.weekStart) } : f, k);
         }}
       />
-      <TextField label="From" type="date" value={f.from} onChange={(_, v) => props.onChange({ ...f, from: v || '' }, '')} />
-      <TextField label="To" type="date" value={f.to} onChange={(_, v) => props.onChange({ ...f, to: v || '' }, '')} />
+      <DateField label="From" value={f.from} minWidth={150} onChange={(v) => props.onChange({ ...f, from: v }, '')} />
+      <DateField label="To" value={f.to} minWidth={150} onChange={(v) => props.onChange({ ...f, to: v }, '')} />
       {props.projects !== false && (
         <Dropdown
           label="Projects"

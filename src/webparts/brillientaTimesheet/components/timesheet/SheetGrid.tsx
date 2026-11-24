@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Checkbox, Dropdown, Icon, IconButton, IDropdownOption, TextField, TooltipHost } from '@fluentui/react';
 import { DateKey, ICustomColumn, ITimeEntry, ITimeOff, ITsUser } from '../../models/types';
 import { useApp } from '../AppContext';
+import { DateField } from '../common/Ui';
 import { DAY_SHORT, dayOfWeek, fromKey, today } from '../../services/dates';
 import { dayTotals, holidayOn, isTrackingDay, leaveHours, limitsFor, parseHours, snapHours } from '../../services/rules';
 import { defaultBillable, projectsFor, tasksFor } from '../../services/access';
@@ -293,7 +294,7 @@ function CustomCell(props: { column: ICustomColumn; value: string | number | boo
     case 'number':
       return <TextField type="number" value={props.value === undefined ? '' : String(props.value)} onChange={(_, v) => props.onChange(v === '' || v === undefined ? '' : Number(v))} ariaLabel={c.label} />;
     case 'date':
-      return <TextField type="date" value={String(props.value || '')} onChange={(_, v) => props.onChange(v || '')} ariaLabel={c.label} />;
+      return <DateField value={String(props.value || '')} onChange={(v) => props.onChange(v)} ariaLabel={c.label} minWidth={140} />;
     default:
       return <TextField value={String(props.value || '')} onChange={(_, v) => props.onChange(v || '')} ariaLabel={c.label} />;
   }

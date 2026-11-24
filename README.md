@@ -11,7 +11,7 @@ except the emails and Teams messages you switch on.
 
 ![Project overview](docs/screenshots/detail-overview.png)
 
-See also: [Enterprise feature checklist](docs/ENTERPRISE-CHECKLIST.md).
+See also: [Enterprise feature checklist](docs/ENTERPRISE-CHECKLIST.md) · [Release notes](docs/RELEASE-NOTES.md) · [Privacy](docs/PRIVACY.md) · [Terms](docs/TERMS.md) · [Product guide](docs/client/guide.html).
 
 ## Contents
 
@@ -24,6 +24,7 @@ See also: [Enterprise feature checklist](docs/ENTERPRISE-CHECKLIST.md).
 7. [Security model](#7-security-model)
 8. [Development](#8-development)
 9. [Code map](#9-code-map)
+10. [Publication (marketplace, Teams)](#10-publication)
 
 ---
 
@@ -292,3 +293,32 @@ src/webparts/brillientaTimesheet/
     App.tsx, Shell.tsx, AppContext.ts, Timesheet.module.scss (design system shared with Employee Directory)
     home/ timesheet/ approvals/ projects/ people/ reports/ admin/ support/ setup/ common/
 ```
+
+---
+
+## 10. Publication
+
+What the SharePoint Store / AppSource listing, **Sync to Teams** and the Teams admin center need. All of it is checked
+by `tests/teams.test.cjs`.
+
+- **One source for the listing:** `services/product.ts` (`PRODUCT`): the marketplace name **Brillienta Timesheet**,
+  publisher details (website, privacy, terms, partner id), help and contact links, short description (≤ 80) and long
+  description (≤ 4,000, ending with Get started, Help and Contact us). `config/package-solution.json` must say the same.
+- **Store images:** `sharepoint/images/app-icon.png` (96 px; also the web part picker's `iconImageUrl`) and five
+  1366 × 768 screenshots `sharepoint/images/screenshot-1..5.png`. Recapture with `npm run preview`, then
+  `node tools/docs/capture.cjs store` (preview `?plan=enterprise&demo=1`: no trial banner, sample data).
+- **Teams:** `teams/manifest.json` (v1.25, `supportsChannelFeatures: "tier1"`, app id = web part id) and the icons
+  `teams/<web part id>_color.png` / `_outline.png` are packaged, so Sync to Teams publishes the app as Brillienta
+  Timesheet. Regenerate after a version change with `node tools/teams/make-app-package.cjs` (it validates against the
+  official schema). Admin › Integrations › Teams downloads the same manifest.
+- **Teams site discovery:** with no timesheet on the team's site and no tenant property, the app looks for
+  `BrillTS_Settings` lists with SharePoint search, opens the one marked **Use this site in Teams** (setting
+  `TeamsDefault`), or asks once and remembers in the browser.
+- **Copilot agent:** downloaded from Admin › Integrations › Copilot; validated against the Teams and declarative agent
+  v1.2 schemas; its app id is derived from the site URL, so a new download updates the same agent.
+- **Search:** operational lists (audit, notifications, email queue, tickets, saved reports) are `NoCrawl`; Settings and
+  the lists Copilot reads stay searchable.
+- **Docs:** `docs/PRIVACY.md`, `docs/TERMS.md`, `docs/RELEASE-NOTES.md`, `docs/brand/` (logo SVG and 512 px PNG,
+  `node tools/icons/make-icons.cjs --brand`) and the product guide `docs/client/guide.html`
+  (`node tools/docs/capture.cjs guide`, then `node tools/docs/build-guide.cjs` writes the HTML and PDF to
+  `docs/client/dist/`).

@@ -1,7 +1,7 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
   "solution": {
-    "name": "Brillienta-Timesheet",
+    "name": "Brillienta Timesheet",
     "id": "68060ea7-a75d-47d6-bd5f-685afeabbaf0",
     "version": "1.0.0.0",
     "iconPath": "images/app-icon.png",
@@ -17,15 +17,22 @@
     },
     "metadata": {
       "shortDescription": {
-        "default": "Timesheets, projects, approvals and cost reports for SharePoint and Microsoft Teams."
+        "default": "Timesheets, approvals, projects and cost reports for SharePoint and Teams."
       },
       "longDescription": {
-        "default": "Brillienta Timesheet is a time tracking app that runs inside SharePoint Online and Microsoft Teams. All data stays in SharePoint lists on your own site. It includes weekly timesheets with cloning, billable and non-billable hours, projects, tasks and activities with bulk creation and self-assignment, custom columns, user and project hourly rates, approvals with role-based auto-approval, daily and weekly hour rules, pending timesheet reminders, project and team reports, custom dashboards, Excel export, Time off Manager 365, Planner, Teams and Outlook integration, Power Automate, Power BI and a REST API. Includes a 14-day free trial of every feature; after the trial a licence key from Brillienta is required (Standard, Pro or Enterprise). Microsoft Graph permissions: User.Read.All (people picker and external users), Tasks.ReadWrite (Planner import, optional), Mail.Send and ChatMessage.Send and Chat.Create (Outlook and Teams notifications, optional), User.Invite.All (inviting external users, optional), Group.Read.All (Planner plans and group import)."
+        "default": "Brillienta Timesheet is a time tracking app that runs inside SharePoint Online and Microsoft Teams. All data stays in SharePoint lists on your own site. People fill in weekly timesheets with projects, tasks, activities, billable and non-billable hours and notes, clone earlier weeks and submit them for approval. Managers and project managers approve or send back weeks, one at a time or in bulk, with role-based auto-approval and daily and weekly hour limits, including rules by role, department or external user. It includes projects and programmes with planned hours, end dates and notifications; bulk creation of projects, tasks and activities; self-assigned tasks; custom columns; user and project hourly cost and bill rates; project, team, billable, cost and utilisation reports with Excel export; custom reports and dashboards; pending timesheet reminders; email templates; and branded SharePoint security groups. Integrations: Microsoft Teams and Outlook notifications, Microsoft Planner, Microsoft 365 Copilot, Power Automate, Power BI, the SharePoint REST API, Time off Manager 365 and Brillienta Task Manager. Includes a 14-day free trial of every feature; after the trial a licence key from Brillienta is required (Standard, Pro or Enterprise). Microsoft Graph permissions, all optional: User.Read.All (people search), Group.Read.All and Tasks.ReadWrite (Planner), Mail.Send, Chat.Create and ChatMessage.Send (Outlook and Teams notifications) and User.Invite.All (inviting external users). To use it in Microsoft Teams, a SharePoint admin selects the app in the tenant app catalog and selects Sync to Teams; it then appears in Teams under Apps, Built for your org, as Brillienta Timesheet. Get started: start your free 14-day trial at https://brillienta.com/timesheet. Help: read the product guide at https://kb.brillienta.com/timesheet/. Contact us: https://brillienta.com/contact or support@brillienta.com."
       },
       "categories": [
         "Productivity",
         "Project management",
         "Accounting + Finance"
+      ],
+      "screenshotPaths": [
+        "images/screenshot-1.png",
+        "images/screenshot-2.png",
+        "images/screenshot-3.png",
+        "images/screenshot-4.png",
+        "images/screenshot-5.png"
       ]
     },
     "features": [
@@ -37,13 +44,34 @@
       }
     ],
     "webApiPermissionRequests": [
-      { "resource": "Microsoft Graph", "scope": "User.Read.All" },
-      { "resource": "Microsoft Graph", "scope": "Tasks.ReadWrite" },
-      { "resource": "Microsoft Graph", "scope": "Group.Read.All" },
-      { "resource": "Microsoft Graph", "scope": "Mail.Send" },
-      { "resource": "Microsoft Graph", "scope": "ChatMessage.Send" },
-      { "resource": "Microsoft Graph", "scope": "Chat.Create" },
-      { "resource": "Microsoft Graph", "scope": "User.Invite.All" }
+      {
+        "resource": "Microsoft Graph",
+        "scope": "User.Read.All"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "Tasks.ReadWrite"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "Group.Read.All"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "Mail.Send"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "ChatMessage.Send"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "Chat.Create"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "User.Invite.All"
+      }
     ]
   },
   "paths": {

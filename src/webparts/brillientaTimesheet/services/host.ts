@@ -66,3 +66,62 @@ export function shareableBase(currentHref: string, storedPageUrl: string): strin
 export function isTeamsDeepLink(href: string): boolean {
   return /^https:\/\/teams\.(microsoft|cloud\.microsoft)(\.com)?\/l\//i.test(href || '');
 }
+
+// ---- Finding the timesheet from Teams without any setup ----
+//
+// In Teams the web part runs on the team's site or the tenant root site. When neither the tab's setting, that site, nor
+// the tenant property points at a timesheet, it looks for one with SharePoint search: the Settings list is kept in
+// search, and search only returns sites the person can read. No extra permission is needed.
+
+/** Setting (in a timesheet's own Settings list) marking it as the one Teams opens when search finds several. */
+export const TEAMS_DEFAULT_SETTING = 'TeamsDefault';
+/** This browser's choice among several timesheets (localStorage). */
+export const TEAMS_CHOICE_KEY = 'brillts.teamsTimesheet';
+
+/** SharePoint search query (KQL) for Settings lists titled `settingsTitle` (e.g. "BrillTS_Settings"). */
+export function settingsSearchQuery(settingsTitle: string): string {
+  return `${settingsTitle.replace(/[^A-Za-z0-9_]/g, '')} contentclass:STS_List*`;
+}
+
+/** One result row of SharePoint's search REST API (nometadata), as cells. */
+export interface ISearchRow {
+  Cells: Array<{ Key: string; Value: string | null }>;
+}
+
+/**
+ * Site URLs of the timesheets in search results: rows that are the `settingsTitle` list itself (its title, or a path
+ * inside /Lists/<title>), on this tenant, each site once, in result order.
+ */
+export function sitesFromSearch(rows: ISearchRow[], settingsTitle: string, origin: string): string[] {
+  const title = settingsTitle.toLowerCase();
+  const marker = `/lists/${title}`;
+  const out: string[] = [];
+  (rows || []).forEach((row) => {
+    const cell: Record<string, string> = {};
+    (row.Cells || []).forEach((c) => (cell[c.Key] = c.Value || ''));
+    let path = cell.Path || '';
+    try {
+      path = decodeURIComponent(path);
+    } catch {
+      // keep it encoded
+    }
+    const at = path.toLowerCase().indexOf(marker);
+    const next = at >= 0 ? path.charAt(at + marker.length) : 'x';
+    const inList = at >= 0 && (next === '' || next === '/' || next === '?');
+    if ((cell.Title || '').toLowerCase() !== title && !inList) return;
+    const site = normalizeSiteUrl(cell.SPWebUrl || (inList ? path.slice(0, at) : ''), origin);
+    if (site && !out.some((s) => sameSite(s, site))) out.push(site);
+  });
+  return out;
+}
+
+/** Which found timesheet Teams opens: the only one, else this browser's choice, else the only marked one; else the person chooses. */
+export function pickSite(found: Array<{ url: string; marked: boolean }>, remembered: string): { url: string } | { choose: string[] } | undefined {
+  if (!found.length) return undefined;
+  if (found.length === 1) return { url: found[0].url };
+  const mine = found.filter((f) => sameSite(f.url, remembered))[0];
+  if (mine) return { url: mine.url };
+  const marked = found.filter((f) => f.marked);
+  if (marked.length === 1) return { url: marked[0].url };
+  return { choose: (marked.length ? marked : found).map((f) => f.url) };
+}

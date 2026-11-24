@@ -299,11 +299,12 @@ export function Field(props: { label: string; children: React.ReactNode; hint?: 
  * A date (yyyy-mm-dd) picker: wide enough to show the date, the calendar starting on the organisation's first day of
  * the week, dates shown as "25 Nov 2026".
  */
-export function DateField(props: { label?: string; value: string; onChange: (key: string) => void; ariaLabel?: string; minWidth?: number }): JSX.Element {
+export function DateField(props: { label?: string; value: string; onChange: (key: string) => void; ariaLabel?: string; minWidth?: number; required?: boolean }): JSX.Element {
   const { config } = useApp();
   return (
     <DatePicker
       label={props.label}
+      isRequired={props.required}
       ariaLabel={props.ariaLabel || props.label}
       firstDayOfWeek={config.weekStart as DayOfWeek}
       value={props.value ? fromKey(props.value) : undefined}

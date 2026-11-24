@@ -11,6 +11,8 @@ export const SETTING_KEYS = {
   licenseKey: 'LicenseKey',
   brandLogo: 'BrandLogo',
   pageUrl: 'PageUrl',
+  /** "1": Teams opens this timesheet when SharePoint search finds several (Admin › Integrations › Teams). */
+  teamsDefault: 'TeamsDefault',
   /** Last reminder / project notice run: "<ISO time>|<name>" (one browser runs them at a time). */
   reminderRun: 'ReminderRun',
   /** Weeks already reminded: JSON { "<email>|<week>": "<ISO>" } (pruned to the lookback). */
